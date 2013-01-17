@@ -32,7 +32,6 @@ import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.GSSAPIServerSubjectFactory;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpServerConnection;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
@@ -118,7 +117,7 @@ public class GSSAPIAuthenticationMechanism implements AuthenticationMechanism {
         return result;
     }
 
-    public void handleComplete(HttpServerExchange exchange, HttpCompletionHandler completionHandler) {
+    public void handleComplete(HttpServerExchange exchange) {
         NegotiationContext negContext = exchange.getAttachment(NegotiationContext.ATTACHMENT_KEY);
 
         boolean authAdded = false;
@@ -141,8 +140,6 @@ public class GSSAPIAuthenticationMechanism implements AuthenticationMechanism {
             // client.
             exchange.setResponseCode(CODE_401.getCode());
         }
-
-        completionHandler.handleComplete();
     }
 
     private String getHostName(final HttpServerExchange exchange) {

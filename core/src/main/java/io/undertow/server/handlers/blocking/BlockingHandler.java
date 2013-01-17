@@ -21,7 +21,6 @@ package io.undertow.server.handlers.blocking;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import io.undertow.UndertowLogger;
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.WorkerDispatcher;
@@ -47,8 +46,8 @@ public final class BlockingHandler implements HttpHandler {
     }
 
     @Override
-    public void handleRequest(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler) {
-        final BlockingHttpServerExchange blockingExchange = new BlockingHttpServerExchange(exchange, completionHandler);
+    public void handleRequest(final HttpServerExchange exchange) {
+        final BlockingHttpServerExchange blockingExchange = new BlockingHttpServerExchange(exchange);
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
@@ -62,8 +61,6 @@ public final class BlockingHandler implements HttpHandler {
                         exchange.setResponseCode(500);
                     }
                     UndertowLogger.REQUEST_LOGGER.errorf(t, "Blocking request failed %s", blockingExchange);
-                } finally {
-                    completionHandler.handleComplete();
                 }
             }
         };

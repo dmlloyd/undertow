@@ -25,11 +25,8 @@ import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
 
 import io.undertow.UndertowLogger;
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.HttpHandlers;
-import io.undertow.util.CompletionChannelExceptionHandler;
-import io.undertow.util.CompletionChannelListener;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
@@ -51,7 +48,7 @@ public class InLineFileCache implements FileCache {
     public static final FileCache INSTANCE = new InLineFileCache();
 
     @Override
-    public void serveFile(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler, final File file, final boolean directoryListingEnabled) {
+    public void serveFile(final HttpServerExchange exchange, final File file, final boolean directoryListingEnabled) {
         // ignore request body
         IoUtils.safeShutdownReads(exchange.getRequestChannel());
         final HttpString method = exchange.getRequestMethod();
@@ -62,37 +59,31 @@ public class InLineFileCache implements FileCache {
                 fileChannel = exchange.getConnection().getWorker().getXnio().openFile(file, FileAccess.READ_ONLY);
             } catch (FileNotFoundException e) {
                 exchange.setResponseCode(404);
-                completionHandler.handleComplete();
                 return;
             }
             length = fileChannel.size();
         } catch (IOException e) {
             UndertowLogger.REQUEST_LOGGER.exceptionReadingFile(file, e);
             exchange.setResponseCode(500);
-            completionHandler.handleComplete();
             return;
         }
         exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, Long.toString(length));
         if (method.equals(Methods.HEAD)) {
-            completionHandler.handleComplete();
             return;
         }
         if (! method.equals(Methods.GET)) {
             exchange.setResponseCode(500);
-            completionHandler.handleComplete();
             return;
         }
         final ChannelFactory<StreamSinkChannel> factory = exchange.getResponseChannelFactory();
         if (factory == null) {
             IoUtils.safeClose(fileChannel);
-            completionHandler.handleComplete();
             return;
         }
         final StreamSinkChannel responseChannel = factory.create();
         responseChannel.getCloseSetter().set(new ChannelListener<Channel>() {
             public void handleEvent(final Channel channel) {
                 IoUtils.safeClose(fileChannel);
-                completionHandler.handleComplete();
             }
         });
         long pos = 0L;
@@ -100,15 +91,13 @@ public class InLineFileCache implements FileCache {
         while (length > 0L) {
             try {
                 res = responseChannel.transferFrom(fileChannel, pos, length);
-                completionHandler.handleComplete();
             } catch (IOException e) {
                 IoUtils.safeClose(fileChannel);
                 IoUtils.safeClose(responseChannel);
-                completionHandler.handleComplete();
                 return;
             }
             if (res == 0L) {
-                responseChannel.getWriteSetter().set(new TransferListener(length, pos, responseChannel, fileChannel, completionHandler));
+                responseChannel.getWriteSetter().set(new TransferListener(length, pos, responseChannel, fileChannel));
                 responseChannel.resumeWrites();
                 return;
             }
@@ -116,7 +105,7 @@ public class InLineFileCache implements FileCache {
             length -= res;
         }
         IoUtils.safeClose(fileChannel);
-        HttpHandlers.flushAndCompleteRequest(responseChannel, completionHandler);
+        HttpHandlers.closeAndFlush(responseChannel);
     }
 
     private static class TransferListener implements ChannelListener<StreamSinkChannel> {
@@ -125,14 +114,12 @@ public class InLineFileCache implements FileCache {
         private long pos;
         private final StreamSinkChannel responseChannel;
         private final FileChannel fileChannel;
-        private final HttpCompletionHandler completionHandler;
 
-        public TransferListener(final long length, final long pos, final StreamSinkChannel responseChannel, final FileChannel fileChannel, final HttpCompletionHandler completionHandler) {
+        public TransferListener(final long length, final long pos, final StreamSinkChannel responseChannel, final FileChannel fileChannel) {
             this.length = length;
             this.pos = pos;
             this.responseChannel = responseChannel;
             this.fileChannel = fileChannel;
-            this.completionHandler = completionHandler;
         }
 
         public void handleEvent(final StreamSinkChannel channel) {
@@ -147,7 +134,6 @@ public class InLineFileCache implements FileCache {
                         IoUtils.safeClose(fileChannel);
                         responseChannel.suspendWrites();
                         IoUtils.safeClose(responseChannel);
-                        completionHandler.handleComplete();
                         return;
                     }
                     if (res == 0L) {
@@ -157,20 +143,7 @@ public class InLineFileCache implements FileCache {
                     length -= res;
                 }
                 IoUtils.safeClose(fileChannel);
-                try {
-                    responseChannel.shutdownWrites();
-                    if (! responseChannel.flush()) {
-                        responseChannel.getWriteSetter().set(ChannelListeners.<SuspendableWriteChannel>flushingChannelListener(new CompletionChannelListener(completionHandler), new CompletionChannelExceptionHandler(completionHandler)));
-                        responseChannel.resumeWrites();
-                        return;
-                    }
-                } catch (IOException e) {
-                    IoUtils.safeClose(fileChannel);
-                    responseChannel.suspendWrites();
-                    IoUtils.safeClose(responseChannel);
-                    completionHandler.handleComplete();
-                    return;
-                }
+                HttpHandlers.closeAndFlush(responseChannel);
             } finally {
                 this.length = length;
                 this.pos = pos;

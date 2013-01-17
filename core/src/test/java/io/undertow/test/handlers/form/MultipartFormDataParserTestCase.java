@@ -22,8 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
-
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.form.FormData;
@@ -41,7 +39,6 @@ import org.apache.http.entity.mime.content.StringBody;
 import io.undertow.util.TestHttpClient;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -56,7 +53,7 @@ public class MultipartFormDataParserTestCase {
         final MultiPartHandler fd = new MultiPartHandler();
         fd.setNext(new HttpHandler() {
             @Override
-            public void handleRequest(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler) {
+            public void handleRequest(final HttpServerExchange exchange) {
                 final FormDataParser parser = exchange.getAttachment(FormDataParser.ATTACHMENT_KEY);
                 try {
                     FormData data = parser.parse().get();
@@ -71,10 +68,8 @@ public class MultipartFormDataParserTestCase {
                             }
                         }
                     }
-                    completionHandler.handleComplete();
                 } catch (IOException e) {
                     exchange.setResponseCode(500);
-                    completionHandler.handleComplete();
                 }
             }
         });

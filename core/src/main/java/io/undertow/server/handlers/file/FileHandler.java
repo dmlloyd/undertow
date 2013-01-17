@@ -26,7 +26,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import io.undertow.UndertowMessages;
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -56,22 +55,21 @@ public class FileHandler implements HttpHandler {
     }
 
     @Override
-    public void handleRequest(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler) {
+    public void handleRequest(final HttpServerExchange exchange) {
         String path = exchange.getRelativePath();
         if (File.separatorChar != '/') {
             if (path.indexOf(File.separatorChar) != -1) {
                 exchange.setResponseCode(404);
-                completionHandler.handleComplete();
                 return;
             }
             path = path.replace('/', File.separatorChar);
         }
 
-        if (sendRequestedBlobs(exchange, completionHandler)) {
+        if (sendRequestedBlobs(exchange)) {
             return;
         }
 
-        fileCache.serveFile(exchange, completionHandler, new File(base, path), directoryListingEnabled);
+        fileCache.serveFile(exchange, new File(base, path), directoryListingEnabled);
     }
 
     public File getBase() {
@@ -96,7 +94,7 @@ public class FileHandler implements HttpHandler {
         this.fileCache = fileCache;
     }
 
-    private boolean sendRequestedBlobs(HttpServerExchange exchange, HttpCompletionHandler completionHandler) {
+    private boolean sendRequestedBlobs(HttpServerExchange exchange) {
         ByteBuffer buffer = null;
         String type = null;
         if ("css".equals(exchange.getQueryString())) {
@@ -111,13 +109,12 @@ public class FileHandler implements HttpHandler {
             exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, String.valueOf(buffer.limit()));
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, type);
             if (Methods.HEAD.equals(exchange.getRequestMethod())) {
-                completionHandler.handleComplete();
                 return true;
             }
 
             ChannelFactory<StreamSinkChannel> factory = exchange.getResponseChannelFactory();
             StreamSinkChannel channel = factory.create();
-            BufferTransfer.transfer(exchange, channel, completionHandler, null, new ByteBuffer[]{buffer});
+            BufferTransfer.transfer(exchange, channel, null, new ByteBuffer[]{buffer});
 
             return true;
         }
@@ -125,12 +122,11 @@ public class FileHandler implements HttpHandler {
         return false;
     }
 
-    public static void renderDirectoryListing(HttpServerExchange exchange, HttpCompletionHandler completionHandler, File file, ChannelFactory<StreamSinkChannel> factory) {
+    public static void renderDirectoryListing(HttpServerExchange exchange, File file, ChannelFactory<StreamSinkChannel> factory) {
         String requestPath = exchange.getRequestPath();
         if (! requestPath.endsWith("/")) {
             exchange.setResponseCode(302);
             exchange.getResponseHeaders().put(Headers.LOCATION, requestPath + "/");
-            completionHandler.handleComplete();
             return;
         }
 
@@ -198,8 +194,6 @@ public class FileHandler implements HttpHandler {
         } catch (IOException e) {
             exchange.setResponseCode(500);
         }
-
-        completionHandler.handleComplete();
         return;
     }
 

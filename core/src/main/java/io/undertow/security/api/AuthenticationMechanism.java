@@ -23,7 +23,6 @@ import java.security.Principal;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.impl.SecurityContext;
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpServerExchange;
 import org.xnio.IoFuture;
 
@@ -69,7 +68,7 @@ public interface AuthenticationMechanism {
 
     IoFuture<AuthenticationResult> authenticate(final HttpServerExchange exchange, final IdentityManager identityManager);
 
-    void handleComplete(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler);
+    void handleComplete(final HttpServerExchange exchange);
 
     /**
      * @return The name of the mechanism.

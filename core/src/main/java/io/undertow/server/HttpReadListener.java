@@ -20,7 +20,6 @@ package io.undertow.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import io.undertow.UndertowLogger;
@@ -48,7 +47,6 @@ final class HttpReadListener implements ChannelListener<PushBackStreamChannel> {
 
     private ParseState state = new ParseState();
     private HttpServerExchange httpServerExchange;
-    private StartNextRequestAction startNextRequestAction;
 
     private final HttpServerConnection connection;
 
@@ -81,8 +79,6 @@ final class HttpReadListener implements ChannelListener<PushBackStreamChannel> {
                 return new HttpResponseChannel(channel, connection.getBufferPool(), exchange);
             }
         });
-        this.startNextRequestAction = startNextRequestAction;
-
     }
 
     public void handleEvent(final PushBackStreamChannel channel) {
@@ -157,7 +153,7 @@ final class HttpReadListener implements ChannelListener<PushBackStreamChannel> {
                 httpServerExchange.setRequestScheme(connection.getSslSession() != null ? "https" : "http"); //todo: determine if this is https
                 state = null;
                 this.httpServerExchange = null;
-                connection.getRootHandler().handleRequest(httpServerExchange, new CompletionHandler(httpServerExchange, startNextRequestAction));
+                connection.getRootHandler().handleRequest(httpServerExchange);
 
             } catch (Throwable t) {
                 //TODO: we should attempt to return a 500 status code in this situation
@@ -286,31 +282,6 @@ final class HttpReadListener implements ChannelListener<PushBackStreamChannel> {
             nextRequestResponseChannel.openGate(permit);
             nextRequestResponseChannel = null;
             permit = null;
-        }
-    }
-
-    private static class CompletionHandler extends AtomicBoolean implements HttpCompletionHandler {
-        private final HttpServerExchange httpServerExchange;
-        private final StartNextRequestAction startNextRequestAction;
-
-        public CompletionHandler(final HttpServerExchange httpServerExchange, final StartNextRequestAction startNextRequestAction) {
-            this.httpServerExchange = httpServerExchange;
-            this.startNextRequestAction = startNextRequestAction;
-        }
-
-        public void handleComplete() {
-            if (!compareAndSet(false, true)) {
-                return;
-            }
-            try {
-                httpServerExchange.cleanup();
-            } finally {
-                //mark this request as finished to allow the next request to run
-                //but only if this is not an upgrade response
-                if (httpServerExchange.getResponseCode() != 101) {
-                    startNextRequestAction.completionHandler();
-                }
-            }
         }
     }
 }

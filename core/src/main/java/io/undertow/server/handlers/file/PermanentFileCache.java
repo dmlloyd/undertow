@@ -19,7 +19,6 @@
 package io.undertow.server.handlers.file;
 
 import io.undertow.UndertowLogger;
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
@@ -55,7 +54,7 @@ public class PermanentFileCache implements FileCache {
     private final ConcurrentMap<String, FileChannel> channels = new ConcurrentHashMap<String, FileChannel>();
 
     @Override
-    public void serveFile(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler, final File file, final boolean directoryListingEnabled) {
+    public void serveFile(final HttpServerExchange exchange, final File file, final boolean directoryListingEnabled) {
         // ignore request body
         IoUtils.safeShutdownReads(exchange.getRequestChannel());
         final HttpString method = exchange.getRequestMethod();
@@ -68,7 +67,6 @@ public class PermanentFileCache implements FileCache {
                     fileChannel = exchange.getConnection().getWorker().getXnio().openFile(file, FileAccess.READ_ONLY);
                 } catch (FileNotFoundException e) {
                     exchange.setResponseCode(404);
-                    completionHandler.handleComplete();
                     return;
                 }
                 final FileChannel appearing = channels.putIfAbsent(file.getPath(), fileChannel);
@@ -81,37 +79,31 @@ public class PermanentFileCache implements FileCache {
         } catch (IOException e) {
             UndertowLogger.REQUEST_LOGGER.exceptionReadingFile(file, e);
             exchange.setResponseCode(500);
-            completionHandler.handleComplete();
             return;
         }
         exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, Long.toString(length));
         if (method.equals(Methods.HEAD)) {
-            completionHandler.handleComplete();
             return;
         }
         if (! method.equals(Methods.GET)) {
             exchange.setResponseCode(500);
-            completionHandler.handleComplete();
             return;
         }
         final ChannelFactory<StreamSinkChannel> factory = exchange.getResponseChannelFactory();
         if (factory == null) {
-            completionHandler.handleComplete();
             return;
         }
         final StreamSinkChannel response = factory.create();
-        WorkerDispatcher.dispatch(exchange, new FileWriteTask(completionHandler, response, fileChannel, length));
+        WorkerDispatcher.dispatch(exchange, new FileWriteTask(response, fileChannel, length));
     }
 
     private static class FileWriteTask implements Runnable {
 
-        private final HttpCompletionHandler completionHandler;
         private final StreamSinkChannel channel;
         private final FileChannel fileChannel;
         private final long length;
 
-        public FileWriteTask(final HttpCompletionHandler completionHandler, final StreamSinkChannel channel, final FileChannel fileChannel, final long length) {
-            this.completionHandler = completionHandler;
+        public FileWriteTask(final StreamSinkChannel channel, final FileChannel fileChannel, final long length) {
             this.channel = channel;
             this.fileChannel = fileChannel;
             this.length = length;
@@ -127,10 +119,8 @@ public class PermanentFileCache implements FileCache {
                 log.tracef("Finished serving %s, flushing (blocking)", fileChannel);
                 Channels.flushBlocking(channel);
                 log.tracef("Finished serving %s (complete)", fileChannel);
-                completionHandler.handleComplete();
             } catch (IOException ignored) {
                 log.tracef("Failed to serve %s: %s", fileChannel, ignored);
-                completionHandler.handleComplete();
             } finally {
                 IoUtils.safeClose(channel);
             }

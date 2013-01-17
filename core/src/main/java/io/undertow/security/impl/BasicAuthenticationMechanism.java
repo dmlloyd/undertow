@@ -26,7 +26,6 @@ import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.ConcreteIoFuture;
 import io.undertow.util.FlexBase64;
@@ -69,8 +68,7 @@ public class BasicAuthenticationMechanism implements AuthenticationMechanism {
     }
 
     /**
-     * @see io.undertow.server.HttpHandler#handleRequest(io.undertow.server.HttpServerExchange,
-     *      io.undertow.server.HttpCompletionHandler)
+     * @see #handleRequest(io.undertow.server.HttpCompletionHandler)
      */
     @Override
     public IoFuture<AuthenticationResult> authenticate(final HttpServerExchange exchange, final IdentityManager identityManager) {
@@ -148,13 +146,11 @@ public class BasicAuthenticationMechanism implements AuthenticationMechanism {
         }
     }
 
-    public void handleComplete(HttpServerExchange exchange, HttpCompletionHandler completionHandler) {
+    public void handleComplete(HttpServerExchange exchange) {
         if (Util.shouldChallenge(exchange)) {
             exchange.getResponseHeaders().add(WWW_AUTHENTICATE, challenge);
             exchange.setResponseCode(CODE_401.getCode());
         }
-
-        completionHandler.handleComplete();
     }
 
 }

@@ -9,7 +9,6 @@ import io.undertow.UndertowLogger;
 import io.undertow.UndertowOptions;
 import io.undertow.channels.GatedStreamSinkChannel;
 import io.undertow.server.ChannelWrapper;
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpServerConnection;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
@@ -143,7 +142,7 @@ final class AjpReadListener implements ChannelListener<PushBackStreamChannel> {
                 httpServerExchange.setRequestScheme(connection.getSslSession() != null ? "https" : "http"); //todo: determine if this is https
                 state = null;
                 this.httpServerExchange = null;
-                connection.getRootHandler().handleRequest(httpServerExchange, new CompletionHandler(httpServerExchange, startNextRequestAction));
+                connection.getRootHandler().handleRequest(httpServerExchange);
 
             } catch (Throwable t) {
                 //TODO: we should attempt to return a 500 status code in this situation
@@ -266,31 +265,6 @@ final class AjpReadListener implements ChannelListener<PushBackStreamChannel> {
             nextRequestResponseChannel.openGate(permit);
             nextRequestResponseChannel = null;
             permit = null;
-        }
-    }
-
-    private static class CompletionHandler extends AtomicBoolean implements HttpCompletionHandler {
-        private final HttpServerExchange httpServerExchange;
-        private final StartNextRequestAction startNextRequestAction;
-
-        public CompletionHandler(final HttpServerExchange httpServerExchange, final StartNextRequestAction startNextRequestAction) {
-            this.httpServerExchange = httpServerExchange;
-            this.startNextRequestAction = startNextRequestAction;
-        }
-
-        public void handleComplete() {
-            if (!compareAndSet(false, true)) {
-                return;
-            }
-            try {
-                httpServerExchange.cleanup();
-            } finally {
-                //mark this request as finished to allow the next request to run
-                //but only if this is not an upgrade response
-                if (httpServerExchange.getResponseCode() != 101) {
-                    startNextRequestAction.completionHandler();
-                }
-            }
         }
     }
 

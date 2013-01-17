@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 
 import javax.servlet.ServletOutputStream;
 
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.handlers.HttpHandlers;
 import io.undertow.servlet.UndertowServletMessages;
 import io.undertow.util.Headers;
@@ -241,7 +240,7 @@ public class ServletOutputStreamImpl extends ServletOutputStream {
                         if (pooledBuffer != null) {
                             pooledBuffer.free();
                         }
-                        HttpHandlers.flushAndCompleteRequest(channel, handler);
+                        HttpHandlers.closeAndFlush(channel);
                         return;
                     }
                 } while (res > 0);
@@ -279,7 +278,7 @@ public class ServletOutputStreamImpl extends ServletOutputStream {
                             if (pooledBuffer != null) {
                                 pooledBuffer.free();
                             }
-                            HttpHandlers.flushAndCompleteRequest(channel, handler);
+                            HttpHandlers.closeAndFlush(channel);
                         }
 
                     });
@@ -296,7 +295,7 @@ public class ServletOutputStreamImpl extends ServletOutputStream {
                 handler.handleComplete();
             }
         } else {
-            HttpHandlers.flushAndCompleteRequest(channel, handler);
+            HttpHandlers.closeAndFlush(channel);
             buffer = null;
             pooledBuffer = null;
         }

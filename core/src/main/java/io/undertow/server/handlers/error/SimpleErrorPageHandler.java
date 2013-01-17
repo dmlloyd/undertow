@@ -23,16 +23,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.HttpHandlers;
 import io.undertow.server.handlers.ResponseCodeHandler;
-import io.undertow.util.Headers;
-import io.undertow.util.StatusCodes;
-import io.undertow.util.StringWriteChannelListener;
-import org.xnio.channels.ChannelFactory;
-import org.xnio.channels.StreamSinkChannel;
 
 /**
  * Handler that generates an extremely simple no frills error page
@@ -56,31 +50,8 @@ public class SimpleErrorPageHandler implements HttpHandler {
     }
 
     @Override
-    public void handleRequest(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler) {
-        HttpHandlers.executeHandler(next, exchange, new HttpCompletionHandler() {
-            @Override
-            public void handleComplete() {
-                Set<Integer> codes = responseCodes;
-                if (codes == null ? exchange.getResponseCode() >= 400 : codes.contains(Integer.valueOf(exchange.getResponseCode()))) {
-                    final ChannelFactory<StreamSinkChannel> factory = exchange.getResponseChannelFactory();
-                    if (factory != null) {
-                        final String errorPage = "<html><head><title>Error</title></head><body>" + exchange.getResponseCode() + " - " + StatusCodes.getReason(exchange.getResponseCode()) + "</body></html>";
-                        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, "" + errorPage.length());
-
-                        final StreamSinkChannel response = factory.create();
-                        StringWriteChannelListener listener = new StringWriteChannelListener(errorPage) {
-                            @Override
-                            protected void writeDone(final StreamSinkChannel channel) {
-                                HttpHandlers.flushAndCompleteRequest(channel, completionHandler);
-                            }
-                        };
-                        listener.setup(response);
-                        return;
-                    }
-                }
-                completionHandler.handleComplete();
-            }
-        });
+    public void handleRequest(final HttpServerExchange exchange) {
+        HttpHandlers.executeHandler(next, exchange);
     }
 
     public HttpHandler getNext() {

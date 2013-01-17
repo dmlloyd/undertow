@@ -37,7 +37,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.blocking.BlockingHttpServerExchange;
@@ -51,7 +50,7 @@ import org.xnio.IoUtils;
 /**
  * Default servlet responsible for serving up resources. This is both a handler and a servlet. If no filters
  * match the current path then the resources will be served up asynchronously using the
- * {@link #handleRequest(io.undertow.server.HttpServerExchange, io.undertow.server.HttpCompletionHandler)} method,
+ * {@link #handleRequest(io.undertow.server.HttpCompletionHandler)} method,
  * otherwise the request is handled as a normal servlet request.
  * <p/>
  * By default we only allow a restricted set of extensions.
@@ -138,7 +137,7 @@ public class DefaultServlet extends HttpServlet implements HttpHandler {
     }
 
     @Override
-    public void handleRequest(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler) {
+    public void handleRequest(final HttpServerExchange exchange) {
         if (!isAllowed(exchange.getRelativePath())) {
             //we don't call the completion handler, as we allow the initial handler to do error handling
             exchange.setResponseCode(404);
@@ -151,21 +150,21 @@ public class DefaultServlet extends HttpServlet implements HttpHandler {
         } else if (resource.isDirectory()) {
             handleWelcomePage(exchange, completionHandler, resource);
         } else {
-            fileCache.serveFile(exchange, completionHandler, resource, false);
+            fileCache.serveFile(exchange, resource, false);
         }
     }
 
     private void handleWelcomePage(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler, final File resource) {
         File welcomePage = findWelcomeFile(resource);
         if (welcomePage != null) {
-            fileCache.serveFile(exchange, completionHandler, welcomePage, false);
+            fileCache.serveFile(exchange, welcomePage, false);
         } else {
             ServletPathMatch handler = findWelcomeServlet(exchange.getRelativePath().endsWith("/") ? exchange.getRelativePath() : exchange.getRelativePath() + "/");
             if (handler != null && handler.getHandler() != null) {
                 exchange.setRequestPath(exchange.getResolvedPath() + handler.getMatched());
                 exchange.setRequestURI(exchange.getResolvedPath() + handler.getMatched());
                 exchange.putAttachment(ServletAttachments.SERVLET_PATH_MATCH, handler);
-                handler.getHandler().handleRequest(exchange, completionHandler);
+                handler.getHandler().handleRequest(exchange);
             } else {
                 exchange.setResponseCode(404);
                 completionHandler.handleComplete();

@@ -25,7 +25,6 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import io.undertow.util.HeaderMap;
 import io.undertow.util.StatusCodes;
@@ -38,7 +37,6 @@ import org.xnio.Pool;
 import org.xnio.Pooled;
 import org.xnio.XnioExecutor;
 import org.xnio.XnioWorker;
-import org.xnio.channels.ConcurrentStreamChannelAccessException;
 import org.xnio.channels.StreamSinkChannel;
 import org.xnio.channels.StreamSourceChannel;
 
@@ -102,7 +100,7 @@ final class HttpResponseChannel implements StreamSinkChannel {
     /**
      * Handles writing out the header data. It can also take a byte buffer of user
      * data, to enable both user data and headers to be written out in a single operation,
-     * which has a noticable performance impact.
+     * which has a noticeable performance impact.
      *
      * It is up to the caller to note the current position of this buffer before and after they
      * call this method, and use this to figure out how many bytes (if any) have been written.

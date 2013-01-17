@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 
 import io.undertow.UndertowLogger;
 import io.undertow.UndertowMessages;
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.HttpHandlers;
@@ -55,12 +54,12 @@ public class FormEncodedDataHandler implements HttpHandler {
     private volatile HttpHandler next = ResponseCodeHandler.HANDLE_404;
 
     @Override
-    public void handleRequest(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler) {
+    public void handleRequest(final HttpServerExchange exchange) {
         String mimeType = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
         if (mimeType != null && mimeType.equals(APPLICATION_X_WWW_FORM_URLENCODED)) {
-            exchange.putAttachment(FormDataParser.ATTACHMENT_KEY, new AsyncFormEncodedDataParser(exchange, completionHandler));
+            exchange.putAttachment(FormDataParser.ATTACHMENT_KEY, new AsyncFormEncodedDataParser(exchange));
         }
-        HttpHandlers.executeHandler(next, exchange, completionHandler);
+        HttpHandlers.executeHandler(next, exchange);
     }
 
     public HttpHandler getNext() {
@@ -75,7 +74,6 @@ public class FormEncodedDataHandler implements HttpHandler {
     private static final class AsyncFormEncodedDataParser implements ChannelListener<StreamSourceChannel>, FormDataParser {
 
         private final HttpServerExchange exchange;
-        private final HttpCompletionHandler completionHandler;
         private final FormData data = new FormData();
         private final StringBuilder builder = new StringBuilder();
         private String name = null;
@@ -88,14 +86,13 @@ public class FormEncodedDataHandler implements HttpHandler {
         //4=finished
         private int state = 0;
 
-        private AsyncFormEncodedDataParser(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler) {
+        private AsyncFormEncodedDataParser(final HttpServerExchange exchange) {
             this.exchange = exchange;
-            this.completionHandler = completionHandler;
         }
 
         @Override
         public void handleEvent(final StreamSourceChannel channel) {
-            int c = 0;
+            int c;
             final Pooled<ByteBuffer> pooled = exchange.getConnection().getBufferPool().allocate();
             try {
                 final ByteBuffer buffer = pooled.getResource();
@@ -169,8 +166,6 @@ public class FormEncodedDataHandler implements HttpHandler {
                 ioFuture.setException(e);
                 IoUtils.safeClose(channel);
                 UndertowLogger.REQUEST_LOGGER.ioExceptionReadingFromChannel(e);
-                completionHandler.handleComplete();
-
             } finally {
                 pooled.free();
             }

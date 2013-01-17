@@ -22,7 +22,6 @@ import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 
 import io.undertow.UndertowLogger;
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.HttpHandlers;
@@ -75,10 +74,10 @@ public class ServletInitialHandler implements BlockingHttpHandler, HttpHandler {
     }
 
     @Override
-    public void handleRequest(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler) {
+    public void handleRequest(final HttpServerExchange exchange) {
         if (asyncPath != null) {
             //if the next handler is the default servlet we just execute it directly
-            HttpHandlers.executeHandler(asyncPath, exchange, completionHandler);
+            HttpHandlers.executeHandler(asyncPath, exchange);
             //this is not great, but as the file was not found we need to do error handling
             //so re just run the request again but via the normal servlet path
             //todo: fix this, we should just be able to run the error handling code without copy/pasting heaps of
@@ -87,7 +86,7 @@ public class ServletInitialHandler implements BlockingHttpHandler, HttpHandler {
                 return;
             }
         }
-        final BlockingHttpServerExchange blockingExchange = new BlockingHttpServerExchange(exchange, completionHandler);
+        final BlockingHttpServerExchange blockingExchange = new BlockingHttpServerExchange(exchange);
         Runnable runnable = new Runnable() {
             @Override
             public void run() {

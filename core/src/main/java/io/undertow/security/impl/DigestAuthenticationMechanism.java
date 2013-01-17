@@ -32,7 +32,6 @@ import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.NonceManager;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
@@ -159,11 +158,11 @@ public class DigestAuthenticationMechanism implements AuthenticationMechanism {
     }
 
     @Override
-    public void handleComplete(HttpServerExchange exchange, HttpCompletionHandler completionHandler) {
+    public void handleComplete(HttpServerExchange exchange) {
         if (Util.shouldChallenge(exchange)) {
-            dispatch(exchange, new SendChallengeRunnable(exchange, completionHandler));
+            dispatch(exchange, new SendChallengeRunnable(exchange));
         } else {
-            dispatch(exchange, new SendAuthenticationInfoHeader(exchange, completionHandler));
+            dispatch(exchange, new SendAuthenticationInfoHeader(exchange));
         }
     }
 
@@ -445,11 +444,9 @@ public class DigestAuthenticationMechanism implements AuthenticationMechanism {
     private class SendChallengeRunnable implements Runnable {
 
         private final HttpServerExchange exchange;
-        private final HttpCompletionHandler next;
 
-        private SendChallengeRunnable(final HttpServerExchange exchange, final HttpCompletionHandler next) {
+        private SendChallengeRunnable(final HttpServerExchange exchange) {
             this.exchange = exchange;
-            this.next = next;
         }
 
         public void run() {
@@ -485,21 +482,17 @@ public class DigestAuthenticationMechanism implements AuthenticationMechanism {
                 responseHeader.add(WWW_AUTHENTICATE, theChallenge);
             }
             exchange.setResponseCode(CODE_401.getCode());
-
-            next.handleComplete();
         }
     }
 
     private class SendAuthenticationInfoHeader implements Runnable {
 
         private final HttpServerExchange exchange;
-        private final HttpCompletionHandler next;
         private final DigestContext context;
 
-        private SendAuthenticationInfoHeader(final HttpServerExchange exchange, final HttpCompletionHandler next) {
+        private SendAuthenticationInfoHeader(final HttpServerExchange exchange) {
             this.exchange = exchange;
             context = exchange.getAttachment(DigestContext.ATTACHMENT_KEY);
-            this.next = next;
         }
 
         public void run() {
@@ -531,7 +524,6 @@ public class DigestAuthenticationMechanism implements AuthenticationMechanism {
             }
 
             exchange.removeAttachment(DigestContext.ATTACHMENT_KEY);
-            next.handleComplete();
         }
 
         private byte[] createHA2Auth() {

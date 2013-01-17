@@ -17,7 +17,6 @@
  */
 package io.undertow.security.handlers;
 
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.security.impl.SecurityContext;
@@ -39,13 +38,12 @@ public class AuthenticationCallHandler implements HttpHandler {
     /**
      * Only allow the request through if successfully authenticated or if authentication is not required.
      *
-     * @see io.undertow.server.HttpHandler#handleRequest(io.undertow.server.HttpServerExchange,
-     *      io.undertow.server.HttpCompletionHandler)
+     * @see #handleRequest(io.undertow.server.HttpCompletionHandler)
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, HttpCompletionHandler completionHandler) {
+    public void handleRequest(HttpServerExchange exchange) {
         SecurityContext context = exchange.getAttachment(SecurityContext.ATTACHMENT_KEY);
-        context.authenticate(exchange, completionHandler, next);
+        context.authenticate(exchange, next);
     }
 
 }

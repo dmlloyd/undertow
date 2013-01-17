@@ -18,7 +18,6 @@
 
 package io.undertow.servlet.handlers;
 
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.HttpHandlers;
@@ -43,15 +42,8 @@ public class ErrorCodeHandler implements HttpHandler {
     }
 
     @Override
-    public void handleRequest(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler) {
-        HttpHandlers.executeHandler(next, exchange, new HttpCompletionHandler() {
-            @Override
-            public void handleComplete() {
-                if(exchange.getResponseCode() >= 500 && !exchange.isResponseStarted()) {
-
-                }
-            }
-        });
+    public void handleRequest(final HttpServerExchange exchange) {
+        HttpHandlers.executeHandler(next, exchange);
     }
 
     public HttpHandler getNext() {

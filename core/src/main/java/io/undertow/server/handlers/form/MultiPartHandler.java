@@ -28,7 +28,6 @@ import java.util.concurrent.Executor;
 
 import io.undertow.UndertowLogger;
 import io.undertow.UndertowMessages;
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.HttpHandlers;
@@ -60,32 +59,16 @@ public class MultiPartHandler implements HttpHandler {
     private volatile File tempFileLocation = new File(System.getProperty("java.io.tmpdir"));
 
     @Override
-    public void handleRequest(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler) {
+    public void handleRequest(final HttpServerExchange exchange) {
         String mimeType = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
         if (mimeType != null && mimeType.startsWith(MULTIPART_FORM_DATA)) {
             String boundary = Headers.extractTokenFromHeader(mimeType, "boundary");
-            final MultiPartUploadHandler multiPartUploadHandler = new MultiPartUploadHandler(exchange, completionHandler, boundary);
+            final MultiPartUploadHandler multiPartUploadHandler = new MultiPartUploadHandler(exchange, boundary);
             exchange.putAttachment(FormDataParser.ATTACHMENT_KEY, multiPartUploadHandler);
 
-            HttpHandlers.executeHandler(next, exchange, new HttpCompletionHandler() {
-                @Override
-                public void handleComplete() {
-                    try {
-                        completionHandler.handleComplete();
-                    } finally {
-                        for (final File file : multiPartUploadHandler.getCreatedFiles()) {
-                            if (file.exists()) {
-                                if (!file.delete()) {
-                                    UndertowLogger.REQUEST_LOGGER.cannotRemoveUploadedFile(file);
-                                }
-                            }
-                        }
-                    }
-
-                }
-            });
+            HttpHandlers.executeHandler(next, exchange);
         } else {
-            HttpHandlers.executeHandler(next, exchange, completionHandler);
+            HttpHandlers.executeHandler(next, exchange);
         }
     }
 
@@ -118,7 +101,6 @@ public class MultiPartHandler implements HttpHandler {
     private final class MultiPartUploadHandler implements FormDataParser, Runnable, MultipartParser.PartHandler {
 
         private final HttpServerExchange exchange;
-        private final HttpCompletionHandler completionHandler;
         private final FormData data = new FormData();
         private final String boundary;
         private final List<File> createdFiles = new ArrayList<File>();
@@ -134,9 +116,8 @@ public class MultiPartHandler implements HttpHandler {
         private HeaderMap headers;
 
 
-        private MultiPartUploadHandler(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler, final String boundary) {
+        private MultiPartUploadHandler(final HttpServerExchange exchange, final String boundary) {
             this.exchange = exchange;
-            this.completionHandler = completionHandler;
             this.boundary = boundary;
         }
 
@@ -201,7 +182,6 @@ public class MultiPartHandler implements HttpHandler {
                     if (c == -1) {
                         IoUtils.safeClose(requestChannel);
                         UndertowLogger.REQUEST_LOGGER.connectionTerminatedReadingMultiPartData();
-                        completionHandler.handleComplete();
                         return;
                     } else if (c != 0) {
                         parser.parse(buf);

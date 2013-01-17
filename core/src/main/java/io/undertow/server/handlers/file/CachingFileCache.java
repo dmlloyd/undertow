@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
@@ -74,32 +73,30 @@ public class CachingFileCache implements FileCache {
     }
 
     @Override
-    public void serveFile(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler, final File file, final boolean directoryListingEnabled) {
+    public void serveFile(final HttpServerExchange exchange, final File file, final boolean directoryListingEnabled) {
         // ignore request body
         IoUtils.safeShutdownReads(exchange.getRequestChannel());
         final HttpString method = exchange.getRequestMethod();
 
         if (!(method.equals(Methods.GET) || method.equals(Methods.HEAD))) {
             exchange.setResponseCode(500);
-            completionHandler.handleComplete();
             return;
         }
         final ChannelFactory<StreamSinkChannel> factory = exchange.getResponseChannelFactory();
         final DirectBufferCache.CacheEntry entry = cache.get(file.getAbsolutePath());
         if (entry == null) {
-            WorkerDispatcher.dispatch(exchange, new FileWriteLoadTask(exchange, completionHandler, factory, file, directoryListingEnabled));
+            WorkerDispatcher.dispatch(exchange, new FileWriteLoadTask(exchange, factory, file, directoryListingEnabled));
             return;
         }
 
         exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, Long.toString(entry.size()));
         if (method.equals(Methods.HEAD)) {
-            completionHandler.handleComplete();
             return;
         }
 
         // It's loading retry later
         if (!entry.enabled() || !entry.reference()) {
-            WorkerDispatcher.dispatch(exchange, new FileWriteLoadTask(exchange, completionHandler, factory, file, directoryListingEnabled));
+            WorkerDispatcher.dispatch(exchange, new FileWriteLoadTask(exchange, factory, file, directoryListingEnabled));
             return;
         }
 
@@ -125,19 +122,17 @@ public class CachingFileCache implements FileCache {
 
         // Transfer Inline, or register and continue transfer
         // Pass off the entry dereference call to the listener
-        BufferTransfer.transfer(exchange, responseChannel, completionHandler, new DereferenceCallback(entry), buffers);
+        BufferTransfer.transfer(exchange, responseChannel, new DereferenceCallback(entry), buffers);
     }
 
     private class FileWriteLoadTask implements Runnable {
 
-        private final HttpCompletionHandler completionHandler;
         private final File file;
         private final HttpServerExchange exchange;
         private final ChannelFactory<StreamSinkChannel> factory;
         private final boolean renderDirectoryListing;
 
-        public FileWriteLoadTask(final HttpServerExchange exchange, final HttpCompletionHandler completionHandler, final ChannelFactory<StreamSinkChannel> factory, final File file, final boolean renderDirectoryListing) {
-            this.completionHandler = completionHandler;
+        public FileWriteLoadTask(final HttpServerExchange exchange, final ChannelFactory<StreamSinkChannel> factory, final File file, final boolean renderDirectoryListing) {
             this.factory = factory;
             this.file = file;
             this.exchange = exchange;
@@ -152,11 +147,10 @@ public class CachingFileCache implements FileCache {
 
             if (file.isDirectory()) {
                 if (renderDirectoryListing) {
-                    FileHandler.renderDirectoryListing(exchange, completionHandler, file, factory);
+                    FileHandler.renderDirectoryListing(exchange, file, factory);
                 } else {
                     //we send a 404 so as to not leak any information
                     exchange.setResponseCode(404);
-                    completionHandler.handleComplete();
                 }
                 return;
             }
@@ -170,19 +164,16 @@ public class CachingFileCache implements FileCache {
                 } else {
                     exchange.setResponseCode(500);
                 }
-                completionHandler.handleComplete();
                 return;
             }
 
 
             exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, Long.toString(length));
             if (method.equals(Methods.HEAD)) {
-                completionHandler.handleComplete();
                 return;
             }
             if (!method.equals(Methods.GET)) {
                 exchange.setResponseCode(500);
-                completionHandler.handleComplete();
                 return;
             }
 
@@ -225,7 +216,7 @@ public class CachingFileCache implements FileCache {
 
             // Now that the cache is loaded, attempt to write or register a lister
             // Also, pass off entry dereference to the listener
-            BufferTransfer.transfer(exchange, channel, completionHandler, new DereferenceCallback(entry), buffers);
+            BufferTransfer.transfer(exchange, channel, new DereferenceCallback(entry), buffers);
         }
 
         private ByteBuffer[] populateBuffers(FileChannel fileChannel, long length, DirectBufferCache.CacheEntry entry) {
@@ -245,7 +236,6 @@ public class CachingFileCache implements FileCache {
                 } catch (IOException e) {
                     IoUtils.safeClose(fileChannel);
                     exchange.setResponseCode(500);
-                    completionHandler.handleComplete();
                     return null;
                 }
             }
@@ -278,7 +268,6 @@ public class CachingFileCache implements FileCache {
                 log.tracef("Failed to serve %s: %s", fileChannel, ignored);
             } finally {
                 IoUtils.safeClose(fileChannel);
-                completionHandler.handleComplete();
             }
         }
     }

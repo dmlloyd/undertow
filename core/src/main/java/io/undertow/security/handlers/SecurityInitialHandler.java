@@ -18,7 +18,6 @@
 package io.undertow.security.handlers;
 
 import io.undertow.security.idm.IdentityManager;
-import io.undertow.server.HttpCompletionHandler;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerConnection;
 import io.undertow.server.HttpServerExchange;
@@ -53,37 +52,14 @@ public class SecurityInitialHandler implements HttpHandler {
     }
 
     /**
-     * @see io.undertow.server.HttpHandler#handleRequest(io.undertow.server.HttpServerExchange,
-     *      io.undertow.server.HttpCompletionHandler)
+     * @see #handleRequest(io.undertow.server.HttpCompletionHandler)
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, HttpCompletionHandler completionHandler) {
+    public void handleRequest(HttpServerExchange exchange) {
         SecurityContext existingContext = exchange.getAttachment(SecurityContext.ATTACHMENT_KEY);
         SecurityContext newContext = new SecurityContext(identityManager);
         exchange.putAttachment(SecurityContext.ATTACHMENT_KEY, newContext);
 
-        HttpCompletionHandler wrapperHandler = new InitialCompletionHandler(exchange, existingContext, completionHandler);
-        next.handleRequest(exchange, wrapperHandler);
+        next.handleRequest(exchange);
     }
-
-    private final class InitialCompletionHandler implements HttpCompletionHandler {
-
-        private final HttpServerExchange exchange;
-        private final SecurityContext originalSecurityContext;
-        private final HttpCompletionHandler next;
-
-        private InitialCompletionHandler(final HttpServerExchange exchange, final SecurityContext originalSecurityContext,
-                final HttpCompletionHandler next) {
-            this.exchange = exchange;
-            this.originalSecurityContext = originalSecurityContext;
-            this.next = next;
-        }
-
-        public void handleComplete() {
-            exchange.putAttachment(SecurityContext.ATTACHMENT_KEY, originalSecurityContext);
-            next.handleComplete();
-        }
-
-    }
-
 }
