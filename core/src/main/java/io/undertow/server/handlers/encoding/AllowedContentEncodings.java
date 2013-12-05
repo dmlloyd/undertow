@@ -74,7 +74,7 @@ public class AllowedContentEncodings implements ConduitWrapper<StreamSinkConduit
             EncodingMapping encoding = getEncoding();
             if (encoding != null) {
                 exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, encoding.getName());
-                if (exchange.getRequestMethod().equals(Methods.HEAD)) {
+                if (exchange.getRequestMethod().equalsIgnoreCase(Methods.HEAD)) {
                     //we don't create an actual encoder for HEAD requests, but we set the header
                     return factory.create();
                 } else {

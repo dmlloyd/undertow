@@ -166,7 +166,7 @@ final class AjpReadListener implements ChannelListener<StreamSourceChannel>, Exc
                 public void handleEvent(AjpServerResponseConduit channel) {
                     Connectors.terminateResponse(httpServerExchange);
                 }
-            }, httpServerExchange.getRequestMethod().equals(Methods.HEAD));
+            }, httpServerExchange.getRequestMethod().equalsIgnoreCase(Methods.HEAD));
             connection.getChannel().getSinkChannel().setConduit(responseConduit);
             connection.getChannel().getSourceChannel().setConduit(createSourceConduit(connection.getChannel().getSourceChannel().getConduit(), responseConduit, httpServerExchange));
             //we need to set the write ready handler. This allows the response conduit to wrap it
@@ -269,7 +269,7 @@ final class AjpReadListener implements ChannelListener<StreamSourceChannel>, Exc
             transferEncoding = new HttpString(teHeader);
         }
         final String requestContentLength = requestHeaders.getFirst(Headers.CONTENT_LENGTH);
-        if (hasTransferEncoding && !transferEncoding.equals(Headers.IDENTITY)) {
+        if (hasTransferEncoding && !transferEncoding.equalsIgnoreCase(Headers.IDENTITY)) {
             length = null; //unkown length
         } else if (requestContentLength != null) {
             final long contentLength = Long.parseLong(requestContentLength);

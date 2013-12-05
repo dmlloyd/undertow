@@ -180,7 +180,7 @@ public class SimpleParserTestCase {
                     break;
                 }
             }
-            if (header.equals(Headers.HOST)) {
+            if (header.equalsIgnoreCase(Headers.HOST)) {
                 Assert.assertSame(Headers.HOST, header);
             }
             Assert.assertTrue("Could not found header " + header, found);

@@ -44,7 +44,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         if (headerName == null) {
             return null;
         }
-        final int hc = headerName.hashCode();
+        final int hc = headerName.hashCodeIgnoreCase();
         final int idx = hc & (table.length - 1);
         final Object o = table[idx];
         if (o == null) {
@@ -53,7 +53,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         HeaderValues headerValues;
         if (o instanceof HeaderValues) {
             headerValues = (HeaderValues) o;
-            if (! headerName.equals(headerValues.key)) {
+            if (! headerName.equalsIgnoreCase(headerValues.key)) {
                 return null;
             }
             return headerValues;
@@ -61,7 +61,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
             final HeaderValues[] row = (HeaderValues[]) o;
             for (int i = 0; i < row.length; i++) {
                 headerValues = row[i];
-                if (headerValues != null && headerName.equals(headerValues.key)) { return headerValues; }
+                if (headerValues != null && headerName.equalsIgnoreCase(headerValues.key)) { return headerValues; }
             }
             return null;
         }
@@ -99,7 +99,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         if (headerName == null) {
             return null;
         }
-        final int hc = headerName.hashCode();
+        final int hc = headerName.hashCodeIgnoreCase();
         final Object[] table = this.table;
         final int idx = hc & (table.length - 1);
         final Object o = table[idx];
@@ -109,7 +109,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         HeaderValues headerValues;
         if (o instanceof HeaderValues) {
             headerValues = (HeaderValues) o;
-            if (! headerName.equals(headerValues.key)) {
+            if (! headerName.equalsIgnoreCase(headerValues.key)) {
                 return null;
             }
             table[idx] = null;
@@ -119,7 +119,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
             final HeaderValues[] row = (HeaderValues[]) o;
             for (int i = 0; i < row.length; i++) {
                 headerValues = row[i];
-                if (headerValues != null && headerName.equals(headerValues.key)) {
+                if (headerValues != null && headerName.equalsIgnoreCase(headerValues.key)) {
                     row[i] = null;
                     size --;
                     return headerValues;
@@ -178,7 +178,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
             }
             if (newTable[i] instanceof HeaderValues) {
                 HeaderValues e = (HeaderValues) newTable[i];
-                if ((e.key.hashCode() & oldLen) != 0) {
+                if ((e.key.hashCodeIgnoreCase() & oldLen) != 0) {
                     newTable[i] = null;
                     newTable[i + oldLen] = e;
                 }
@@ -192,7 +192,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
             for (int j = 0; j < rowLen; j ++) {
                 item = oldRow[j];
                 if (item != null) {
-                    if ((item.key.hashCode() & oldLen) != 0) {
+                    if ((item.key.hashCodeIgnoreCase() & oldLen) != 0) {
                         oldRow[j] = null;
                     } else {
                         newRow[j] = null;
@@ -206,7 +206,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         if (headerName == null) {
             return null;
         }
-        final int hc = headerName.hashCode();
+        final int hc = headerName.hashCodeIgnoreCase();
         final Object[] table = this.table;
         final int length = table.length;
         final int idx = hc & (length - 1);
@@ -229,7 +229,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         HeaderValues headerValues;
         if (o instanceof HeaderValues) {
             headerValues = (HeaderValues) o;
-            if (! headerName.equals(headerValues.key)) {
+            if (! headerName.equalsIgnoreCase(headerValues.key)) {
                 if (size >= length >> 1) {
                     resize();
                     return getOrCreateEntry(headerName);
@@ -246,7 +246,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
             for (int i = 0; i < row.length; i++) {
                 headerValues = row[i];
                 if (headerValues != null) {
-                    if (headerName.equals(headerValues.key)) { return headerValues; }
+                    if (headerName.equalsIgnoreCase(headerValues.key)) { return headerValues; }
                 } else if (empty == -1) {
                     empty = i;
                 }

@@ -24,7 +24,7 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-import java.util.Random;
+import java.util.Arrays;
 
 import static java.lang.Integer.signum;
 import static java.lang.System.arraycopy;
@@ -37,7 +37,9 @@ import static java.util.Arrays.copyOfRange;
  */
 public final class HttpString implements Comparable<HttpString>, Serializable {
     private final byte[] bytes;
+    private final transient int hashCodeIgnoreCase;
     private final transient int hashCode;
+
     /**
      * And integer that is only set for well known header to make
      * comparison fast
@@ -45,16 +47,16 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
     private final int orderInt;
     private transient String string;
 
+    private static final Field hashCodeIgnoreCaseField;
     private static final Field hashCodeField;
-    private static final int hashCodeBase;
 
     static {
         try {
+            hashCodeIgnoreCaseField = HttpString.class.getDeclaredField("hashCodeIgnoreCase");
             hashCodeField = HttpString.class.getDeclaredField("hashCode");
         } catch (NoSuchFieldException e) {
             throw new NoSuchFieldError(e.getMessage());
         }
-        hashCodeBase = new Random().nextInt();
     }
 
     /**
@@ -113,13 +115,15 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
             bytes[i] = (byte) c;
         }
         this.bytes = bytes;
-        this.hashCode = calcHashCode(bytes);
+        this.hashCodeIgnoreCase = calcHashCodeIgnoreCase(bytes);
+        this.hashCode = string != null ? string.hashCode() : calcHashCode(bytes);
         this.string = string;
     }
 
     private HttpString(final byte[] bytes, final String string) {
         this.bytes = bytes;
-        this.hashCode = calcHashCode(bytes);
+        this.hashCodeIgnoreCase = calcHashCodeIgnoreCase(bytes);
+        this.hashCode = string != null ? string.hashCode() : calcHashCode(bytes);
         this.string = string;
         this.orderInt = 0;
     }
@@ -242,11 +246,15 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
         final int len = Math.min(bytes.length, other.bytes.length);
         int res;
         for (int i = 0; i < len; i++) {
-            res = signum(higher(bytes[i]) - higher(other.bytes[i]));
+            res = signum(uppercase(bytes[i]) - uppercase(other.bytes[i]));
             if (res != 0) return res;
         }
         // shorter strings sort higher
         return signum(bytes.length - other.bytes.length);
+    }
+
+    public int hashCode() {
+        return hashCode;
     }
 
     /**
@@ -254,9 +262,8 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      *
      * @return the hash code
      */
-    @Override
-    public int hashCode() {
-        return hashCode;
+    public int hashCodeIgnoreCase() {
+        return hashCodeIgnoreCase;
     }
 
     /**
@@ -267,7 +274,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      */
     @Override
     public boolean equals(final Object other) {
-        return other == this || other instanceof HttpString && equals((HttpString) other);
+        return other == this || other instanceof HttpString && equalsIgnoreCase((HttpString) other);
     }
 
     /**
@@ -277,30 +284,47 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      * @return {@code true} if they are equal, {@code false} otherwise
      */
     public boolean equals(final HttpString other) {
-        return other == this || other != null && bytesAreEqual(bytes, other.bytes);
+        return other == this || other != null && Arrays.equals(bytes, other.bytes);
     }
 
-    private static int calcHashCode(final byte[] bytes) {
+    /**
+     * Determine if this {@code HttpString} is equal to another (ignoring case differences).
+     *
+     * @param other the other object
+     * @return {@code true} if they are equal, {@code false} otherwise
+     */
+    public boolean equalsIgnoreCase(final HttpString other) {
+        return other == this || other != null && bytesAreEqualIgnoreCase(bytes, other.bytes);
+    }
+
+    private static int calcHashCodeIgnoreCase(final byte[] bytes) {
         int hc = 17;
         for (byte b : bytes) {
-            hc = (hc << 4) + hc + higher(b);
+            hc = (hc << 4) + hc + uppercase(b);
         }
         return hc;
     }
 
-    private static int higher(byte b) {
-        return b & (b >= 'a' && b <= 'z' ? 0xDF : 0xFF);
+    private static int calcHashCode(final byte[] bytes) {
+        // match String.hashCode
+        int hc = 0;
+        for (byte b : bytes) {
+            hc = (hc << 5) - hc + (b & 0xff);
+        }
+        return hc;
     }
 
-    private static boolean bytesAreEqual(final byte[] a, final byte[] b) {
-        return a.length == b.length && bytesAreEquivalent(a, b);
+    private static int uppercase(byte b) {
+        return b >= 'a' && b <= 'z' ? b & 0xDF : b;
     }
 
-    private static boolean bytesAreEquivalent(final byte[] a, final byte[] b) {
-        assert a.length == b.length;
+    private static boolean bytesAreEqualIgnoreCase(final byte[] a, final byte[] b) {
+        if (a.length != b.length) {
+            return false;
+        }
         final int len = a.length;
         for (int i = 0; i < len; i++) {
-            if (higher(a[i]) != higher(b[i])) {
+            if (uppercase(a[i]) != uppercase(b[i])) {
                 return false;
             }
         }
@@ -324,6 +348,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
         ois.defaultReadObject();
         try {
+            hashCodeIgnoreCaseField.setInt(this, calcHashCodeIgnoreCase(bytes));
             hashCodeField.setInt(this, calcHashCode(bytes));
         } catch (IllegalAccessException e) {
             throw new IllegalAccessError(e.getMessage());
@@ -334,7 +359,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
         int hc = 17;
 
         for (int i = 0; i < headerName.length(); ++i) {
-            hc = (hc << 4) + hc + higher((byte) headerName.charAt(i));
+            hc = (hc << 4) + hc + uppercase((byte) headerName.charAt(i));
         }
         return hc;
     }
@@ -346,7 +371,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
 
         final int len = bytes.length;
         for (int i = 0; i < len; i++) {
-            if (higher(bytes[i]) != higher((byte)headerName.charAt(i))) {
+            if (uppercase(bytes[i]) != uppercase((byte) headerName.charAt(i))) {
                 return false;
             }
         }

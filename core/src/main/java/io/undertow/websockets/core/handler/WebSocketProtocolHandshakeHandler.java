@@ -102,7 +102,7 @@ public class WebSocketProtocolHandshakeHandler implements HttpHandler {
 
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-        if (!exchange.getRequestMethod().equals(Methods.GET)) {
+        if (!exchange.getRequestMethod().equalsIgnoreCase(Methods.GET)) {
             // Only GET is supported to start the handshake
             exchange.setResponseCode(403);
             exchange.endExchange();

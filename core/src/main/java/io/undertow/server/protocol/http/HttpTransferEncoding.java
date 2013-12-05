@@ -81,7 +81,7 @@ public class HttpTransferEncoding {
 
         boolean persistentConnection = persistentConnection(exchange, connectionHeader);
 
-        if (exchange.getRequestMethod().equals(Methods.GET)) {
+        if (exchange.getRequestMethod().equalsIgnoreCase(Methods.GET)) {
             if (persistentConnection
                     && connection.getExtraBytes() != null
                     && pipeliningBuffer == null
@@ -109,7 +109,7 @@ public class HttpTransferEncoding {
         if (transferEncodingHeader != null) {
             transferEncoding = new HttpString(transferEncodingHeader);
         }
-        if (transferEncodingHeader != null && !transferEncoding.equals(Headers.IDENTITY)) {
+        if (transferEncodingHeader != null && !transferEncoding.equalsIgnoreCase(Headers.IDENTITY)) {
             ConduitStreamSourceChannel sourceChannel = ((HttpServerConnection) exchange.getConnection()).getChannel().getSourceChannel();
             sourceChannel.setConduit(new ChunkedStreamSourceConduit(sourceChannel.getConduit(), exchange, chunkedDrainListener(exchange)));
         } else if (contentLengthHeader != null) {
@@ -125,7 +125,7 @@ public class HttpTransferEncoding {
                 sourceChannel.setConduit(fixedLengthStreamSourceConduitWrapper(contentLength, sourceChannel.getConduit(), exchange));
             }
         } else if (transferEncodingHeader != null) {
-            if (transferEncoding.equals(Headers.IDENTITY)) {
+            if (transferEncoding.equalsIgnoreCase(Headers.IDENTITY)) {
                 log.trace("Connection not persistent (no content length and identity transfer encoding)");
                 // make it not persistent
                 persistentConnection = false;
@@ -164,7 +164,7 @@ public class HttpTransferEncoding {
             return !(connectionHeader != null && Headers.CLOSE.equalToString(connectionHeader));
         } else if (exchange.isHttp10()) {
             if (connectionHeader != null) {
-                if (Headers.KEEP_ALIVE.equals(new HttpString(connectionHeader))) {
+                if (Headers.KEEP_ALIVE.equalsIgnoreCase(new HttpString(connectionHeader))) {
                     return true;
                 }
             }
@@ -223,7 +223,7 @@ public class HttpTransferEncoding {
         public StreamSinkConduit wrap(final ConduitFactory<StreamSinkConduit> factory, final HttpServerExchange exchange) {
             StreamSinkConduit channel = factory.create();
             final ConduitListener<StreamSinkConduit> finishListener = terminateResponseListener(exchange);
-            boolean headRequest = exchange.getRequestMethod().equals(Methods.HEAD);
+            boolean headRequest = exchange.getRequestMethod().equalsIgnoreCase(Methods.HEAD);
             if (headRequest) {
                 //if this is a head request we add a head channel underneath the content encoding channel
                 //this will just discard the data
@@ -237,7 +237,7 @@ public class HttpTransferEncoding {
             if(!exchange.isPersistent()) {
                 responseHeaders.put(Headers.CONNECTION, Headers.CLOSE.toString());
             } else if (exchange.isPersistent() && connection != null) {
-                if (HttpString.tryFromString(connection).equals(Headers.CLOSE)) {
+                if (HttpString.tryFromString(connection).equalsIgnoreCase(Headers.CLOSE)) {
                     exchange.setPersistent(false);
                 }
             } else if (exchange.getConnection().getUndertowOptions().get(UndertowOptions.ALWAYS_SET_KEEP_ALIVE, true)) {
@@ -284,7 +284,7 @@ public class HttpTransferEncoding {
 
         private StreamSinkConduit handleExplicitTransferEncoding(HttpServerExchange exchange, StreamSinkConduit channel, ConduitListener<StreamSinkConduit> finishListener, HeaderMap responseHeaders, String transferEncodingHeader, boolean headRequest) {
             HttpString transferEncoding = new HttpString(transferEncodingHeader);
-            if (transferEncoding.equals(Headers.CHUNKED)) {
+            if (transferEncoding.equalsIgnoreCase(Headers.CHUNKED)) {
                 if(headRequest) {
                     return channel;
                 }

@@ -37,7 +37,7 @@ public class DirectoryUtils {
         if (buffer != null) {
             exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, String.valueOf(buffer.limit()));
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, type);
-            if (Methods.HEAD.equals(exchange.getRequestMethod())) {
+            if (Methods.HEAD.equalsIgnoreCase(exchange.getRequestMethod())) {
                 exchange.endExchange();
                 return true;
             }

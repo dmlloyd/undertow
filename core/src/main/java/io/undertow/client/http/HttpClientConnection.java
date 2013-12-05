@@ -225,9 +225,9 @@ public class HttpClientConnection extends AbstractAttachable implements Closeabl
         String connectionString = request.getRequestHeaders().getFirst(CONNECTION);
         if (connectionString != null) {
             HttpString connectionHttpString = new HttpString(connectionString);
-            if (connectionHttpString.equals(CLOSE)) {
+            if (connectionHttpString.equalsIgnoreCase(CLOSE)) {
                 state |= CLOSE_REQ;
-            } else if(connectionHttpString.equals(UPGRADE)) {
+            } else if(connectionHttpString.equalsIgnoreCase(UPGRADE)) {
                 state |= UPGRADE_REQUESTED;
             }
         } else if (request.getProtocol() != Protocols.HTTP_1_1) {
@@ -469,7 +469,7 @@ public class HttpClientConnection extends AbstractAttachable implements Closeabl
                 }
 
                 if(connectionString != null) {
-                    if (HttpString.tryFromString(connectionString).equals(Headers.CLOSE)) {
+                    if (HttpString.tryFromString(connectionString).equalsIgnoreCase(Headers.CLOSE)) {
                         HttpClientConnection.this.state |= CLOSE_REQ;
                     }
                 }
@@ -500,9 +500,9 @@ public class HttpClientConnection extends AbstractAttachable implements Closeabl
 
     private void prepareResponseChannel(ClientResponse response, ClientExchange exchange) {
         String encoding = response.getResponseHeaders().getLast(TRANSFER_ENCODING);
-        boolean chunked = encoding != null && Headers.CHUNKED.equals(new HttpString(encoding));
+        boolean chunked = encoding != null && Headers.CHUNKED.equalsIgnoreCase(new HttpString(encoding));
         String length = response.getResponseHeaders().getFirst(CONTENT_LENGTH);
-        if (exchange.getRequest().getMethod().equals(Methods.HEAD)) {
+        if (exchange.getRequest().getMethod().equalsIgnoreCase(Methods.HEAD)) {
             connection.getSourceChannel().setConduit(new FixedLengthStreamSourceConduit(connection.getSourceChannel().getConduit(), 0, responseFinishedListener));
         } else if (chunked) {
             connection.getSourceChannel().setConduit(new ChunkedStreamSourceConduit(connection.getSourceChannel().getConduit(), pushBackStreamSourceConduit, bufferPool, responseFinishedListener, exchange));
@@ -514,7 +514,7 @@ public class HttpClientConnection extends AbstractAttachable implements Closeabl
                 handleError(new IOException(e));
                 throw e;
             }
-        } else if (response.getProtocol().equals(Protocols.HTTP_1_1)) {
+        } else if (response.getProtocol().equalsIgnoreCase(Protocols.HTTP_1_1)) {
             connection.getSourceChannel().setConduit(new FixedLengthStreamSourceConduit(connection.getSourceChannel().getConduit(), 0, responseFinishedListener));
         } else {
             state |= CLOSE_REQ;
