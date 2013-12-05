@@ -222,14 +222,20 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      * @return -1, 0, or 1
      */
     public int compareTo(final HttpString other) {
-        final int len = Math.min(bytes.length, other.bytes.length);
+        final byte[] bytes = this.bytes;
+        final int length = bytes.length;
+        final byte[] otherBytes = other.bytes;
+        final int otherLength = otherBytes.length;
+        // shorter strings sort higher
+        if (length != otherLength) return signum(length - otherLength);
+        final int len = Math.min(length, otherLength);
         int res;
         for (int i = 0; i < len; i++) {
-            res = signum(higher(bytes[i]) - higher(other.bytes[i]));
+            res = signum(higher(bytes[i]) - higher(otherBytes[i]));
             if (res != 0) return res;
         }
-        // shorter strings sort higher
-        return signum(bytes.length - other.bytes.length);
+        // it am unpossible
+        throw new IllegalStateException();
     }
 
     /**
