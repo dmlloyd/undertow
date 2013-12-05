@@ -276,14 +276,10 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
     }
 
     private static boolean bytesAreEqual(final byte[] a, final byte[] b) {
-        return a.length == b.length && bytesAreEquivalent(a, b);
-    }
-
-    private static boolean bytesAreEquivalent(final byte[] a, final byte[] b) {
-        assert a.length == b.length;
+        if (a.length != b.length) return false;
         final int len = a.length;
         for (int i = 0; i < len; i++) {
-            if (higher(a[i]) != higher(b[i])) {
+            if (a[i] != b[i] && higher(a[i]) != higher(b[i])) {
                 return false;
             }
         }
