@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 
 import static java.lang.Integer.signum;
@@ -36,18 +35,8 @@ import static java.util.Arrays.copyOfRange;
  */
 public final class HttpString implements Comparable<HttpString>, Serializable {
     private final byte[] bytes;
-    private final transient int hashCode;
+    private transient int hashCode;
     private transient String string;
-
-    private static final Field hashCodeField;
-
-    static {
-        try {
-            hashCodeField = HttpString.class.getDeclaredField("hashCode");
-        } catch (NoSuchFieldException e) {
-            throw new NoSuchFieldError(e.getMessage());
-        }
-    }
 
     /**
      * Empty HttpString instance.
@@ -100,13 +89,11 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
             bytes[i] = (byte) c;
         }
         this.bytes = bytes;
-        this.hashCode = calcHashCode(bytes);
         this.string = string;
     }
 
     private HttpString(final byte[] bytes, final String string) {
         this.bytes = bytes;
-        this.hashCode = calcHashCode(bytes);
         this.string = string;
     }
 
@@ -245,6 +232,10 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      */
     @Override
     public int hashCode() {
+        int hashCode = this.hashCode;
+        if (hashCode == 0) {
+            hashCode = this.hashCode = calcHashCode(bytes);
+        }
         return hashCode;
     }
 
@@ -308,11 +299,6 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
 
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
         ois.defaultReadObject();
-        try {
-            hashCodeField.setInt(this, calcHashCode(bytes));
-        } catch (IllegalAccessException e) {
-            throw new IllegalAccessError(e.getMessage());
-        }
     }
 
     static int hashCodeOf(String headerName) {
