@@ -219,9 +219,40 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      * @return -1, 0, or 1
      */
     public int compareTo(final HttpString other) {
-        final byte[] bytes = getBytes();
+        if (other == this) return 0;
+        final byte[] bytes = this.bytes;
+        final byte[] otherBytes = other.bytes;
+        final String otherString = other.string;
+        final String string = this.string;
+        if (bytes != null) {
+            if (otherBytes != null) {
+                return arrayCompareToIgnoreCase(bytes, otherBytes);
+            } else if (string != null) {
+                assert otherBytes == null;
+                assert otherString != null;
+                return string.compareToIgnoreCase(otherString);
+            } else {
+                assert otherBytes == null;
+                assert string == null;
+                assert otherString != null; // because otherBytes == null
+                assert bytes != null; // because string == null
+                return arrayCompareToIgnoreCase(bytes, other.getBytes());
+            }
+        } else {
+            assert bytes == null;
+            assert string != null; // because bytes == null
+            if (otherString != null) {
+                return string.compareToIgnoreCase(otherString);
+            } else {
+                assert otherString == null;
+                assert otherBytes != null; // because otherString == null
+                return arrayCompareToIgnoreCase(getBytes(), otherBytes);
+            }
+        }
+    }
+
+    private static int arrayCompareToIgnoreCase(byte[] bytes, byte[] otherBytes) {
         final int length = bytes.length;
-        final byte[] otherBytes = other.getBytes();
         final int otherLength = otherBytes.length;
         // shorter strings sort higher
         if (length != otherLength) return signum(length - otherLength);
