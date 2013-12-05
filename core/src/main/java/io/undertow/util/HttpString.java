@@ -20,6 +20,7 @@ package io.undertow.util;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -34,7 +35,7 @@ import static java.util.Arrays.copyOfRange;
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 public final class HttpString implements Comparable<HttpString>, Serializable {
-    private final byte[] bytes;
+    private byte[] bytes;
     private transient int hashCode;
     private transient String string;
 
@@ -80,19 +81,17 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      */
     public HttpString(final String string) {
         final int len = string.length();
-        final byte[] bytes = new byte[len];
         for (int i = 0; i < len; i++) {
             char c = string.charAt(i);
             if (c > 0xff) {
                 throw new IllegalArgumentException("Invalid string contents");
             }
-            bytes[i] = (byte) c;
         }
-        this.bytes = bytes;
         this.string = string;
     }
 
     private HttpString(final byte[] bytes, final String string) {
+        assert bytes != null || string != null;
         this.bytes = bytes;
         this.string = string;
     }
@@ -106,15 +105,13 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      */
     public static HttpString tryFromString(String string) {
         final int len = string.length();
-        final byte[] bytes = new byte[len];
         for (int i = 0; i < len; i++) {
             char c = string.charAt(i);
             if (c > 0xff) {
                 return null;
             }
-            bytes[i] = (byte) c;
         }
-        return new HttpString(bytes, string);
+        return new HttpString(null, string);
     }
 
     /**
@@ -123,7 +120,8 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      * @return the string length
      */
     public int length() {
-        return bytes.length;
+        final byte[] bytes = this.bytes;
+        return bytes == null ? string.length() : bytes.length;
     }
 
     /**
@@ -132,7 +130,19 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      * @return the byte at an index
      */
     public byte byteAt(int idx) {
-        return bytes[idx];
+        final byte[] bytes = this.bytes;
+        return bytes == null ? (byte) string.charAt(idx) : bytes[idx];
+    }
+
+    private byte[] getBytes() {
+        byte[] bytes = this.bytes;
+        if (bytes == null) {
+            final int len = string.length();
+            bytes = new byte[len];
+            string.getBytes(0, len, bytes, 0);
+            this.bytes = bytes;
+        }
+        return bytes;
     }
 
     /**
@@ -144,7 +154,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      * @param len     the number of bytes to copy
      */
     public void copyTo(int srcOffs, byte[] dst, int offs, int len) {
-        arraycopy(bytes, srcOffs, dst, offs, len);
+        arraycopy(getBytes(), srcOffs, dst, offs, len);
     }
 
     /**
@@ -165,7 +175,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      * @param offs the destination offset
      */
     public void copyTo(byte[] dst, int offs) {
-        copyTo(dst, offs, bytes.length);
+        copyTo(dst, offs, length());
     }
 
     /**
@@ -174,7 +184,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      * @param buffer the buffer to append to
      */
     public void appendTo(ByteBuffer buffer) {
-        buffer.put(bytes);
+        buffer.put(getBytes());
     }
 
     /**
@@ -184,7 +194,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      * @throws IOException if an error occurs
      */
     public void writeTo(OutputStream output) throws IOException {
-        output.write(bytes);
+        output.write(getBytes());
     }
 
     private static byte[] take(final ByteBuffer buffer) {
@@ -209,9 +219,9 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      * @return -1, 0, or 1
      */
     public int compareTo(final HttpString other) {
-        final byte[] bytes = this.bytes;
+        final byte[] bytes = getBytes();
         final int length = bytes.length;
-        final byte[] otherBytes = other.bytes;
+        final byte[] otherBytes = other.getBytes();
         final int otherLength = otherBytes.length;
         // shorter strings sort higher
         if (length != otherLength) return signum(length - otherLength);
@@ -234,7 +244,8 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
     public int hashCode() {
         int hashCode = this.hashCode;
         if (hashCode == 0) {
-            hashCode = this.hashCode = calcHashCode(bytes);
+            final byte[] bytes = this.bytes;
+            hashCode = this.hashCode = bytes != null ? calcHashCode(bytes) : hashCodeOf(string);
         }
         return hashCode;
     }
@@ -257,7 +268,37 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      * @return {@code true} if they are equal, {@code false} otherwise
      */
     public boolean equals(final HttpString other) {
-        return other == this || other != null && bytesAreEqual(bytes, other.bytes);
+        if (other == this) return true;
+        if (other == null) return false;
+        final byte[] bytes = this.bytes;
+        final byte[] otherBytes = other.bytes;
+        final String otherString = other.string;
+        final String string = this.string;
+        if (bytes != null) {
+            if (otherBytes != null) {
+                return bytesAreEqual(bytes, otherBytes);
+            } else if (string != null) {
+                assert otherBytes == null;
+                assert otherString != null;
+                return string.equalsIgnoreCase(otherString);
+            } else {
+                assert otherBytes == null;
+                assert string == null;
+                assert otherString != null; // because otherBytes == null
+                assert bytes != null; // because string == null
+                return bytesAreEqual(bytes, other.getBytes());
+            }
+        } else {
+            assert bytes == null;
+            assert string != null; // because bytes == null
+            if (otherString != null) {
+                return string.equalsIgnoreCase(otherString);
+            } else {
+                assert otherString == null;
+                assert otherBytes != null; // because otherString == null
+                return bytesAreEqual(getBytes(), otherBytes);
+            }
+        }
     }
 
     private static int calcHashCode(final byte[] bytes) {
@@ -273,8 +314,8 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
     }
 
     private static boolean bytesAreEqual(final byte[] a, final byte[] b) {
-        if (a.length != b.length) return false;
         final int len = a.length;
+        if (len != b.length) return false;
         for (int i = 0; i < len; i++) {
             if (a[i] != b[i] && higher(a[i]) != higher(b[i])) {
                 return false;
@@ -291,14 +332,21 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
     @Override
     @SuppressWarnings("deprecation")
     public String toString() {
+        String string = this.string;
         if (string == null) {
-            string = new String(bytes, 0);
+            assert bytes != null;
+            string = this.string = new String(bytes, 0);
         }
         return string;
     }
 
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
         ois.defaultReadObject();
+    }
+
+    private void writeObject(ObjectOutputStream oos) throws IOException {
+        getBytes();
+        oos.defaultWriteObject();
     }
 
     static int hashCodeOf(String headerName) {
@@ -311,13 +359,18 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
     }
 
     public boolean equalToString(String headerName) {
-        if(headerName.length() != bytes.length) {
+        final String string = this.string;
+        if (string != null) {
+            return headerName.equalsIgnoreCase(string);
+        }
+        final byte[] bytes = this.bytes;
+        final int length = bytes.length;
+        if (headerName.length() != length) {
             return false;
         }
-
-        final int len = bytes.length;
+        final int len = length;
         for (int i = 0; i < len; i++) {
-            if (higher(bytes[i]) != higher((byte)headerName.charAt(i))) {
+            if (higher(bytes[i]) != higher((byte) headerName.charAt(i))) {
                 return false;
             }
         }
