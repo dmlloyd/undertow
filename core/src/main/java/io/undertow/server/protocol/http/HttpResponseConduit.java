@@ -110,31 +110,34 @@ final class HttpResponseConduit extends AbstractStreamSinkConduit<StreamSinkCond
      */
     private int processWrite(int state, final ByteBuffer userData) throws IOException {
         assert state != STATE_BODY;
+        Pooled<ByteBuffer> pooledBuffer = this.pooledBuffer;
         if (state == STATE_BUF_FLUSH) {
-            final ByteBuffer byteBuffer = pooledBuffer.getResource();
+            final ByteBuffer buffer = pooledBuffer.getResource();
             do {
-                long res = 0;
+                long res;
                 ByteBuffer[] data;
                 if (userData == null) {
-                    res = next.write(byteBuffer);
+                    res = next.write(buffer);
                 } else {
                     data = writevBuffer;
                     if(data == null) {
                         data = writevBuffer = new ByteBuffer[2];
                     }
-                    data[0] = byteBuffer;
+                    data[0] = buffer;
                     data[1] = userData;
                     res = next.write(data, 0, data.length);
                 }
                 if (res == 0) {
                     return STATE_BUF_FLUSH;
                 }
-            } while (byteBuffer.hasRemaining());
+            } while (buffer.hasRemaining());
             bufferDone();
             return STATE_BODY;
         } else if (state != STATE_START) {
             return processStatefulWrite(state, userData);
         }
+
+        final HttpServerExchange exchange = this.exchange;
 
         //merge the cookies into the header map
         Connectors.flattenCookies(exchange);
@@ -205,7 +208,7 @@ final class HttpResponseConduit extends AbstractStreamSinkConduit<StreamSinkCond
         buffer.put((byte) '\r').put((byte) '\n');
         buffer.flip();
         do {
-            long res = 0;
+            long res;
             ByteBuffer[] data;
             if (userData == null) {
                 res = next.write(buffer);
@@ -258,6 +261,7 @@ final class HttpResponseConduit extends AbstractStreamSinkConduit<StreamSinkCond
         HeaderValues headerValues = this.headerValues;
         int res;
         // BUFFER IS FLIPPED COMING IN
+        final StreamSinkConduit next = this.next;
         if (buffer.hasRemaining()) {
             do {
                 res = next.write(buffer);
