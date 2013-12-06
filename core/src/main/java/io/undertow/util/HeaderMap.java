@@ -72,7 +72,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         if (headerName == null) {
             return null;
         }
-        final int hc = HttpString.hashCodeOf(headerName);
+        final int hc = HttpString.hashCodeIgnoreCaseOf(headerName);
         final int idx = hc & (table.length - 1);
         final Object o = table[idx];
         if (o == null) {
@@ -134,7 +134,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         if (headerName == null) {
             return null;
         }
-        final int hc = HttpString.hashCodeOf(headerName);
+        final int hc = HttpString.hashCodeIgnoreCaseOf(headerName);
         final Object[] table = this.table;
         final int idx = hc & (table.length - 1);
         final Object o = table[idx];

@@ -276,7 +276,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
         int hashCode = this.hashCode;
         if (hashCode == 0) {
             final byte[] bytes = this.bytes;
-            hashCode = this.hashCode = bytes != null ? calcHashCodeIgnoreCase(bytes) : hashCodeOf(string);
+            hashCode = this.hashCode = bytes != null ? calcHashCodeIgnoreCase(bytes) : hashCodeIgnoreCaseOf(string);
         }
         return hashCode;
     }
@@ -380,7 +380,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
         oos.defaultWriteObject();
     }
 
-    static int hashCodeOf(String headerName) {
+    static int hashCodeIgnoreCaseOf(String headerName) {
         int hc = 17;
 
         for (int i = 0; i < headerName.length(); ++i) {
