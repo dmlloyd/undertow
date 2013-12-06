@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Comparator;
 
 import static java.lang.Integer.signum;
 import static java.lang.System.arraycopy;
@@ -36,6 +37,24 @@ import static java.util.Arrays.copyOfRange;
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 public final class HttpString implements Comparable<HttpString>, Serializable {
+
+    /**
+     * A case-sensitive comparator for {@code HttpString}s.
+     */
+    public static final Comparator<HttpString> CASE_SENSITIVE_COMPARATOR = new Comparator<HttpString>() {
+        public int compare(final HttpString o1, final HttpString o2) {
+            return o1.compareTo(o2);
+        }
+    };
+
+    /**
+     * A case-insensitive comparator for {@code HttpString}s.
+     */
+    public static final Comparator<HttpString> CASE_INSENSITIVE_COMPARATOR = new Comparator<HttpString>() {
+        public int compare(final HttpString o1, final HttpString o2) {
+            return o1.compareToIgnoreCase(o2);
+        }
+    };
 
     private static final long serialVersionUID = -6359344368200312000L;
 
