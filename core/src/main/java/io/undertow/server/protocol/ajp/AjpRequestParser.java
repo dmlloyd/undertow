@@ -312,7 +312,7 @@ public class AjpRequestParser extends AbstractAjpParser {
                         state.state = AjpRequestParseState.READING_HEADERS;
                         return;
                     }
-                    exchange.getRequestHeaders().add(state.currentHeader, result.value);
+                    exchange.getRequestHeaders().add(state.currentHeader, HttpString.tryFromString(result.value));
                     state.currentHeader = null;
                     ++readHeaders;
                 }

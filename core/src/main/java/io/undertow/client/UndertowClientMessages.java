@@ -37,7 +37,7 @@ public interface UndertowClientMessages {
     IllegalArgumentException unknownScheme(URI uri);
 
     @Message(id = 1032, value = "Unknown transfer encoding %s")
-    IOException unknownTransferEncoding(String transferEncodingString);
+    IOException unknownTransferEncoding(HttpString transferEncodingString);
 
     @Message(id = 1033, value = "Invalid connection state")
     IllegalStateException invalidConnectionState();

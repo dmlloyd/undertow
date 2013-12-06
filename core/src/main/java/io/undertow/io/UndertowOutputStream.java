@@ -302,9 +302,9 @@ public class UndertowOutputStream extends OutputStream implements BufferWritable
             state |= FLAG_CLOSED;
             if (anyAreClear(state, FLAG_WRITE_STARTED) && channel == null) {
                 if (buffer == null) {
-                    exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, "0");
+                    exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, 0);
                 } else {
-                    exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, "" + buffer.position());
+                    exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, buffer.position());
                 }
             }
             if (buffer != null) {

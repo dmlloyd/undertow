@@ -34,6 +34,7 @@ import io.undertow.util.AttachmentKey;
 import io.undertow.util.ConduitFactory;
 import io.undertow.util.Cookies;
 import io.undertow.util.HeaderMap;
+import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.NetworkUtils;
@@ -498,7 +499,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      * @return The host part of the destination address
      */
     public String getHostName() {
-        String host = requestHeaders.getFirst(Headers.HOST);
+        String host = HttpString.toString(requestHeaders.getFirst(Headers.HOST));
         if (host == null) {
             host = getDestinationAddress().getAddress().getHostAddress();
         } else {
@@ -521,7 +522,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      * @return The host and port part of the destination address
      */
     public String getHostAndPort() {
-        String host = requestHeaders.getFirst(Headers.HOST);
+        String host = HttpString.toString(requestHeaders.getFirst(Headers.HOST));
         if (host == null) {
             host = NetworkUtils.formatPossibleIpv6Address(getDestinationAddress().getAddress().getHostAddress());
             int port = getDestinationAddress().getPort();
@@ -540,7 +541,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      * @return The port part of the destination address
      */
     public int getHostPort() {
-        String host = requestHeaders.getFirst(Headers.HOST);
+        HttpString host = requestHeaders.getFirst(Headers.HOST);
         if (host != null) {
             //for ipv6 addresses we make sure we take out the first part, which can have multiple occurrences of :
             final int colonIndex;
@@ -550,7 +551,7 @@ public final class HttpServerExchange extends AbstractAttachable {
                colonIndex = host.indexOf(':');
             }
             if (colonIndex != -1) {
-                return Integer.parseInt(host.substring(colonIndex + 1));
+                return host.toInt(colonIndex + 1);
             }
         }
         return getDestinationAddress().getPort();
@@ -713,7 +714,7 @@ public final class HttpServerExchange extends AbstractAttachable {
         }
         ExchangeCompletionListener upgradeCompleteListener = new UpgradeCompletionListener(listener);
         setResponseCode(101);
-        getResponseHeaders().put(Headers.CONNECTION, Headers.UPGRADE_STRING);
+        getResponseHeaders().put(Headers.CONNECTION, Headers.UPGRADE);
         final int exchangeCompletionListenersCount = this.exchangeCompletionListenersCount++;
         ExchangeCompletionListener[] exchangeCompleteListeners = this.exchangeCompleteListeners;
         if (exchangeCompleteListeners == null ||exchangeCompleteListeners.length == exchangeCompletionListenersCount) {
@@ -740,7 +741,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      * @throws IllegalStateException if a response or upgrade was already sent, or if the request body is already being
      *                               read
      */
-    public void upgradeChannel(String productName, final HttpUpgradeListener listener) {
+    public void upgradeChannel(HttpString productName, final HttpUpgradeListener listener) {
         if (!connection.isUpgradeSupported()) {
             throw UndertowMessages.MESSAGES.upgradeNotSupported();
         }
@@ -748,7 +749,7 @@ public final class HttpServerExchange extends AbstractAttachable {
         setResponseCode(101);
         final HeaderMap headers = getResponseHeaders();
         headers.put(Headers.UPGRADE, productName);
-        headers.put(Headers.CONNECTION, Headers.UPGRADE_STRING);
+        headers.put(Headers.CONNECTION, Headers.UPGRADE);
         final int exchangeCompletionListenersCount = this.exchangeCompletionListenersCount++;
         ExchangeCompletionListener[] exchangeCompleteListeners = this.exchangeCompleteListeners;
         if (exchangeCompleteListeners == null || exchangeCompleteListeners.length == exchangeCompletionListenersCount) {
@@ -840,11 +841,11 @@ public final class HttpServerExchange extends AbstractAttachable {
      * @return The content length of the request, or <code>-1</code> if it has not been set
      */
     public long getRequestContentLength() {
-        String contentLengthString = requestHeaders.getFirst(Headers.CONTENT_LENGTH);
+        HttpString contentLengthString = requestHeaders.getFirst(Headers.CONTENT_LENGTH);
         if (contentLengthString == null) {
             return -1;
         }
-        return Long.parseLong(contentLengthString);
+        return contentLengthString.toLong() & Long.MAX_VALUE;
     }
 
     /**
@@ -860,11 +861,11 @@ public final class HttpServerExchange extends AbstractAttachable {
      * @return The content length of the response, or <code>-1</code> if it has not been set
      */
     public long getResponseContentLength() {
-        String contentLengthString = responseHeaders.getFirst(Headers.CONTENT_LENGTH);
+        HttpString contentLengthString = responseHeaders.getFirst(Headers.CONTENT_LENGTH);
         if (contentLengthString == null) {
             return -1;
         }
-        return Long.parseLong(contentLengthString);
+        return contentLengthString.toLong() & Long.MAX_VALUE;
     }
 
     /**
@@ -876,7 +877,7 @@ public final class HttpServerExchange extends AbstractAttachable {
         if (length == -1) {
             responseHeaders.remove(Headers.CONTENT_LENGTH);
         } else {
-            responseHeaders.put(Headers.CONTENT_LENGTH, Long.toString(length));
+            responseHeaders.put(Headers.CONTENT_LENGTH, HttpString.fromLong(length));
         }
     }
 
@@ -932,7 +933,8 @@ public final class HttpServerExchange extends AbstractAttachable {
      */
     public Map<String, Cookie> getRequestCookies() {
         if (requestCookies == null) {
-            requestCookies = Cookies.parseRequestCookies(getConnection().getUndertowOptions().get(UndertowOptions.MAX_COOKIES, 200), requestHeaders.get(Headers.COOKIE));
+            final HeaderValues cookies = requestHeaders.get(Headers.COOKIE);
+            requestCookies = Cookies.parseRequestCookies(getConnection().getUndertowOptions().get(UndertowOptions.MAX_COOKIES, 200), cookies == null ? null : cookies.asStrings());
         }
         return requestCookies;
     }
@@ -1379,7 +1381,7 @@ public final class HttpServerExchange extends AbstractAttachable {
     private void closeAndFlushResponse() {
         try {
             if (isResponseChannelAvailable()) {
-                getResponseHeaders().put(Headers.CONTENT_LENGTH, "0");
+                getResponseHeaders().put(Headers.CONTENT_LENGTH, 0L);
                 getResponseChannel();
             }
             responseChannel.shutdownWrites();
@@ -1885,7 +1887,7 @@ public final class HttpServerExchange extends AbstractAttachable {
     }
     @Override
     public String toString() {
-        return "HttpServerExchange{ " + getRequestMethod().toString() + " " + getRequestURI() + '}';
+        return "HttpServerExchange{ " + getRequestMethod() + " " + getRequestURI() + '}';
     }
 
     private final class UpgradeCompletionListener implements ExchangeCompletionListener {

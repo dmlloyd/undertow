@@ -22,6 +22,7 @@ import java.util.HashMap;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -91,7 +92,7 @@ public class PredicateParsingTestCase {
                 predicate = PredicateParser.parse(string, PredicateParsingTestCase.class.getClassLoader());
                 HttpServerExchange e = new HttpServerExchange(null);
                 Assert.assertFalse(predicate.resolve(e));
-                e.getRequestHeaders().add(Headers.CONTENT_TYPE, "text");
+                e.getRequestHeaders().addLast(Headers.CONTENT_TYPE, new HttpString("text"));
                 Assert.assertTrue(predicate.resolve(e));
             } catch (Throwable ex) {
                 throw new RuntimeException("String " + string, ex);
@@ -109,9 +110,9 @@ public class PredicateParsingTestCase {
         try {
             Predicate predicate = PredicateParser.parse(string, PredicateParsingTestCase.class.getClassLoader());
             HttpServerExchange e = new HttpServerExchange(null);
-            e.getRequestHeaders().add(Headers.TRAILER, "a");
+            e.getRequestHeaders().addLast(Headers.TRAILER, new HttpString("a"));
             Assert.assertEquals(result1, predicate.resolve(e));
-            e.getRequestHeaders().add(Headers.CONTENT_LENGTH, "a");
+            e.getRequestHeaders().addLast(Headers.CONTENT_LENGTH, new HttpString("a"));
             Assert.assertEquals(result2, predicate.resolve(e));
         } catch (Throwable ex) {
             throw new RuntimeException("String " + string, ex);

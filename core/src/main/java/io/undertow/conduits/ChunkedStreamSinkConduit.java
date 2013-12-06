@@ -31,6 +31,7 @@ import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import org.xnio.IoUtils;
 import org.xnio.Pool;
 import org.xnio.Pooled;
@@ -275,7 +276,7 @@ public class ChunkedStreamSinkConduit extends AbstractStreamSinkConduit<StreamSi
             //if no data was actually sent we just remove the transfer encoding header, and set content length 0
             //TODO: is this the best way to do it?
             //todo: should we make this behaviour configurable?
-            responseHeaders.put(Headers.CONTENT_LENGTH, "0"); //according to the spec we don't actually need this, but better to be safe
+            responseHeaders.put(Headers.CONTENT_LENGTH, 0); //according to the spec we don't actually need this, but better to be safe
             responseHeaders.remove(Headers.TRANSFER_ENCODING);
             state |= FLAG_NEXT_SHUTDWON | FLAG_WRITES_SHUTDOWN;
             if(anyAreSet(state, CONF_FLAG_PASS_CLOSE)) {
@@ -298,11 +299,11 @@ public class ChunkedStreamSinkConduit extends AbstractStreamSinkConduit<StreamSi
         HeaderMap trailers = attachable.getAttachment(TRAILERS);
         if (trailers != null && trailers.size() != 0) {
             for (HeaderValues trailer : trailers) {
-                for (String val : trailer) {
+                for (HttpString val : trailer) {
                     trailer.getHeaderName().appendTo(lastChunkBuffer);
                     lastChunkBuffer.put((byte) ':');
                     lastChunkBuffer.put((byte) ' ');
-                    lastChunkBuffer.put(val.getBytes("US-ASCII"));
+                    val.appendTo(lastChunkBuffer);
                     lastChunkBuffer.put(CRLF);
                 }
             }

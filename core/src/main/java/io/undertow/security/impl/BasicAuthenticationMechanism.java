@@ -21,7 +21,6 @@ import static io.undertow.UndertowMessages.MESSAGES;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.List;
 import java.util.Map;
 
 import io.undertow.security.api.AuthenticationMechanism;
@@ -33,6 +32,8 @@ import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.util.FlexBase64;
+import io.undertow.util.HeaderValues;
+import io.undertow.util.HttpString;
 
 import static io.undertow.util.Headers.AUTHORIZATION;
 import static io.undertow.util.Headers.BASIC;
@@ -87,11 +88,11 @@ public class BasicAuthenticationMechanism implements AuthenticationMechanism {
     @Override
     public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
 
-        List<String> authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
+        HeaderValues authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
         if (authHeaders != null) {
-            for (String current : authHeaders) {
-                if (current.startsWith(BASIC_PREFIX)) {
-                    String base64Challenge = current.substring(PREFIX_LENGTH);
+            for (HttpString current : authHeaders) {
+                if (current.toString().startsWith(BASIC_PREFIX)) {
+                    String base64Challenge = current.toString().substring(PREFIX_LENGTH);
                     String plainChallenge = null;
                     try {
                         ByteBuffer decode = FlexBase64.decode(base64Challenge);
@@ -137,12 +138,12 @@ public class BasicAuthenticationMechanism implements AuthenticationMechanism {
         if(silent) {
             //if this is silent we only send a challenge if the request contained auth headers
             //otherwise we assume another method will send the challenge
-            String authHeader = exchange.getRequestHeaders().getFirst(AUTHORIZATION);
+            String authHeader = exchange.getRequestHeaders().getFirst(AUTHORIZATION).toString();
             if(authHeader == null) {
                 return new ChallengeResult(false);
             }
         }
-        exchange.getResponseHeaders().add(WWW_AUTHENTICATE, challenge);
+        exchange.getResponseHeaders().add(WWW_AUTHENTICATE, new HttpString(challenge));
         return new ChallengeResult(true, UNAUTHORIZED);
     }
 

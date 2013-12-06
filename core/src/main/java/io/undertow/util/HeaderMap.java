@@ -281,19 +281,19 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         return getEntry(headerName);
     }
 
-    public String getFirst(HttpString headerName) {
+    public HttpString getFirst(HttpString headerName) {
         HeaderValues headerValues = getEntry(headerName);
         if (headerValues == null) return null;
         return headerValues.getFirst();
     }
 
-    public String getFirst(String headerName) {
+    public HttpString getFirst(String headerName) {
         HeaderValues headerValues = getEntry(headerName);
         if (headerValues == null) return null;
         return headerValues.getFirst();
     }
 
-    public String get(HttpString headerName, int index) throws IndexOutOfBoundsException {
+    public HttpString get(HttpString headerName, int index) throws IndexOutOfBoundsException {
         if (headerName == null) {
             return null;
         }
@@ -304,7 +304,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         return headerValues.get(index);
     }
 
-    public String get(String headerName, int index) throws IndexOutOfBoundsException {
+    public HttpString get(String headerName, int index) throws IndexOutOfBoundsException {
         if (headerName == null) {
             return null;
         }
@@ -315,7 +315,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         return headerValues.get(index);
     }
 
-    public String getLast(HttpString headerName) {
+    public HttpString getLast(HttpString headerName) {
         if (headerName == null) {
             return null;
         }
@@ -324,7 +324,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         return headerValues.getLast();
     }
 
-    public String getLast(String headerName) {
+    public HttpString getLast(String headerName) {
         if (headerName == null) {
             return null;
         }
@@ -543,7 +543,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         }
     }
 
-    public Iterable<String> eachValue(final HttpString headerName) {
+    public Iterable<HttpString> eachValue(final HttpString headerName) {
         if (headerName == null) {
             return Collections.emptyList();
         }
@@ -677,11 +677,11 @@ public final class HeaderMap implements Iterable<HeaderValues> {
 
     // add
 
-    public void add(HttpString headerName, String headerValue) {
+    public void add(HttpString headerName, HttpString headerValue) {
         addLast(headerName, headerValue);
     }
 
-    public void addFirst(final HttpString headerName, final String headerValue) {
+    public void addFirst(final HttpString headerName, final HttpString headerValue) {
         if (headerName == null) {
             throw new IllegalArgumentException("headerName is null");
         }
@@ -691,7 +691,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         getOrCreateEntry(headerName).addFirst(headerValue);
     }
 
-    public void addLast(final HttpString headerName, final String headerValue) {
+    public void addLast(final HttpString headerName, final HttpString headerValue) {
         if (headerName == null) {
             throw new IllegalArgumentException("headerName is null");
         }
@@ -702,11 +702,11 @@ public final class HeaderMap implements Iterable<HeaderValues> {
     }
 
     public void add(HttpString headerName, long headerValue) {
-        add(headerName, Long.toString(headerValue));
+        add(headerName, HttpString.fromLong(headerValue));
     }
 
 
-    public void addAll(HttpString headerName, Collection<String> headerValues) {
+    public void addAll(HttpString headerName, Collection<HttpString> headerValues) {
         if (headerName == null) {
             throw new IllegalArgumentException("headerName is null");
         }
@@ -718,7 +718,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
 
     // put
 
-    public void put(HttpString headerName, String headerValue) {
+    public void put(HttpString headerName, HttpString headerValue) {
         if (headerName == null) {
             throw new IllegalArgumentException("headerName is null");
         }
@@ -737,10 +737,19 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         }
         final HeaderValues entry = getOrCreateEntry(headerName);
         entry.clear();
-        entry.add(Long.toString(headerValue));
+        entry.add(HttpString.fromLong(headerValue));
     }
 
-    public void putAll(HttpString headerName, Collection<String> headerValues) {
+    public void put(HttpString headerName, int headerValue) {
+        if (headerName == null) {
+            throw new IllegalArgumentException("headerName is null");
+        }
+        final HeaderValues entry = getOrCreateEntry(headerName);
+        entry.clear();
+        entry.add(HttpString.fromInt(headerValue));
+    }
+
+    public void putAll(HttpString headerName, Collection<HttpString> headerValues) {
         if (headerName == null) {
             throw new IllegalArgumentException("headerName is null");
         }
@@ -761,20 +770,20 @@ public final class HeaderMap implements Iterable<HeaderValues> {
 
     // remove
 
-    public Collection<String> remove(HttpString headerName) {
+    public Collection<HttpString> remove(HttpString headerName) {
         if (headerName == null) {
             return Collections.emptyList();
         }
-        final Collection<String> values = removeEntry(headerName);
-        return values != null ? values : Collections.<String>emptyList();
+        final Collection<HttpString> values = removeEntry(headerName);
+        return values != null ? values : Collections.<HttpString>emptyList();
     }
 
-    public Collection<String> remove(String headerName) {
+    public Collection<HttpString> remove(String headerName) {
         if (headerName == null) {
             return Collections.emptyList();
         }
-        final Collection<String> values = removeEntry(headerName);
-        return values != null ? values : Collections.<String>emptyList();
+        final Collection<HttpString> values = removeEntry(headerName);
+        return values != null ? values : Collections.<HttpString>emptyList();
     }
 
     // contains
@@ -785,10 +794,10 @@ public final class HeaderMap implements Iterable<HeaderValues> {
             return false;
         }
         final Object v = headerValues.value;
-        if (v instanceof String) {
+        if (v instanceof HttpString) {
             return true;
         }
-        final String[] list = (String[]) v;
+        final HttpString[] list = (HttpString[]) v;
         for (int i = 0; i < list.length; i++) {
             if (list[i] != null) {
                 return true;
@@ -803,10 +812,10 @@ public final class HeaderMap implements Iterable<HeaderValues> {
             return false;
         }
         final Object v = headerValues.value;
-        if (v instanceof String) {
+        if (v instanceof HttpString) {
             return true;
         }
-        final String[] list = (String[]) v;
+        final HttpString[] list = (HttpString[]) v;
         for (int i = 0; i < list.length; i++) {
             if (list[i] != null) {
                 return true;
@@ -840,7 +849,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
             sb.append(name);
             sb.append("=[");
             boolean f = true;
-            for(String val : get(name)) {
+            for(HttpString val : get(name)) {
                 if(f) {
                     f = false;
                 } else {

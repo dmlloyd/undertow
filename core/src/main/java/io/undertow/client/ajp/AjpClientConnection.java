@@ -31,6 +31,7 @@ import io.undertow.client.ClientResponse;
 import io.undertow.client.UndertowClientMessages;
 import io.undertow.conduits.ConduitListener;
 import io.undertow.util.AbstractAttachable;
+import io.undertow.util.HttpString;
 import io.undertow.util.Protocols;
 import org.xnio.ChannelExceptionHandler;
 import org.xnio.ChannelListener;
@@ -212,9 +213,9 @@ class AjpClientConnection extends AbstractAttachable implements Closeable, Clien
         pendingResponse = new AjpResponseBuilder();
         ClientRequest request = AjpClientExchange.getRequest();
 
-        String connectionString = request.getRequestHeaders().getFirst(CONNECTION);
+        HttpString connectionString = request.getRequestHeaders().getFirst(CONNECTION);
         if (connectionString != null) {
-            if (CLOSE.equalToStringIgnoreCase(connectionString)) {
+            if (CLOSE.equalsIgnoreCase(connectionString)) {
                 state |= CLOSE_REQ;
             }
         } else if (request.getProtocol() != Protocols.HTTP_1_1) {
@@ -231,11 +232,11 @@ class AjpClientConnection extends AbstractAttachable implements Closeable, Clien
 
         long length = 0;
         ConduitStreamSinkChannel sinkChannel = connection.getSinkChannel();
-        String fixedLengthString = request.getRequestHeaders().getFirst(CONTENT_LENGTH);
-        String transferEncodingString = request.getRequestHeaders().getLast(TRANSFER_ENCODING);
+        HttpString fixedLengthString = request.getRequestHeaders().getFirst(CONTENT_LENGTH);
+        HttpString transferEncodingString = request.getRequestHeaders().getLast(TRANSFER_ENCODING);
 
         if (fixedLengthString != null) {
-            length = Long.parseLong(fixedLengthString);
+            length = fixedLengthString.toLong();
         } else if (transferEncodingString != null) {
             length = -1;
         }
@@ -451,8 +452,8 @@ class AjpClientConnection extends AbstractAttachable implements Closeable, Clien
 
                 //check if an updated worked
                 if (anyAreSet(AjpClientConnection.this.state, UPGRADE_REQUESTED)) {
-                    String connectionString = response.getResponseHeaders().getFirst(CONNECTION);
-                    if (connectionString == null || !UPGRADE.equalToStringIgnoreCase(connectionString)) {
+                    HttpString connectionString = response.getResponseHeaders().getFirst(CONNECTION);
+                    if (connectionString == null || !UPGRADE.equalsIgnoreCase(connectionString)) {
                         //just unset the upgrade requested flag
                         AjpClientConnection.this.state &= ~UPGRADE_REQUESTED;
                     }

@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import io.undertow.util.Protocols;
 import org.junit.Assert;
@@ -74,8 +75,8 @@ public class AjpParsingUnitTestCase {
         Assert.assertSame(Methods.GET, exchange.getRequestMethod());
         Assert.assertEquals(Protocols.HTTP_1_1, exchange.getProtocol());
         Assert.assertEquals(3, exchange.getRequestHeaders().getHeaderNames().size());
-        Assert.assertEquals("localhost:7777", exchange.getRequestHeaders().getFirst(Headers.HOST));
-        Assert.assertEquals("Apache-HttpClient/4.1.3 (java 1.5)", exchange.getRequestHeaders().getFirst(Headers.USER_AGENT));
-        Assert.assertEquals("Keep-Alive", exchange.getRequestHeaders().getFirst(Headers.CONNECTION));
+        Assert.assertEquals(new HttpString("localhost:7777"), exchange.getRequestHeaders().getFirst(Headers.HOST));
+        Assert.assertEquals(new HttpString("Apache-HttpClient/4.1.3 (java 1.5)"), exchange.getRequestHeaders().getFirst(Headers.USER_AGENT));
+        Assert.assertEquals(new HttpString("Keep-Alive"), exchange.getRequestHeaders().getFirst(Headers.CONNECTION));
     }
 }

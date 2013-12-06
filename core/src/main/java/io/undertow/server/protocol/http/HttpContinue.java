@@ -3,7 +3,9 @@ package io.undertow.server.protocol.http;
 import io.undertow.UndertowMessages;
 import io.undertow.io.IoCallback;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import org.xnio.ChannelExceptionHandler;
 import org.xnio.ChannelListener;
 import org.xnio.ChannelListeners;
@@ -11,7 +13,6 @@ import org.xnio.channels.StreamSinkChannel;
 
 import java.io.IOException;
 import java.nio.channels.Channel;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -24,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class HttpContinue {
 
-    public static final String CONTINUE = "100-continue";
+    public static final HttpString CONTINUE = new HttpString("100-continue");
 
     /**
      * Returns true if this exchange requires the server to send a 100 (Continue) response.
@@ -43,9 +44,9 @@ public class HttpContinue {
                 return false;
             }
         }
-        List<String> expect = exchange.getRequestHeaders().get(Headers.EXPECT);
+        HeaderValues expect = exchange.getRequestHeaders().get(Headers.EXPECT);
         if (expect != null) {
-            for (String header : expect) {
+            for (HttpString header : expect) {
                 if (header.equalsIgnoreCase(CONTINUE)) {
                     return true;
                 }

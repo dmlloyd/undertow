@@ -8,6 +8,7 @@ import io.undertow.util.DateUtils;
 import io.undertow.util.ETag;
 import io.undertow.util.ETagUtils;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 
 /**
  * @author Stuart Douglas
@@ -26,22 +27,22 @@ public class CachedHttpRequest {
     public CachedHttpRequest(final HttpServerExchange exchange) {
         this.path = exchange.getRequestPath();
         this.etag = ETagUtils.getETag(exchange);
-        this.contentLocation = exchange.getResponseHeaders().getFirst(Headers.CONTENT_LOCATION);
-        this.language = exchange.getResponseHeaders().getFirst(Headers.CONTENT_LANGUAGE);
-        this.contentType = exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE);
-        String lmString = exchange.getResponseHeaders().getFirst(Headers.LAST_MODIFIED);
+        this.contentLocation = HttpString.toString(exchange.getResponseHeaders().getFirst(Headers.CONTENT_LOCATION));
+        this.language = HttpString.toString(exchange.getResponseHeaders().getFirst(Headers.CONTENT_LANGUAGE));
+        this.contentType = HttpString.toString(exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE));
+        String lmString = HttpString.toString(exchange.getResponseHeaders().getFirst(Headers.LAST_MODIFIED));
         if (lmString == null) {
             this.lastModified = null;
         } else {
             this.lastModified = DateUtils.parseDate(lmString);
         }
         //the content encoding can be decided dynamically, based on the current state of the request
-        //as the decision to compress generally dependends on size and mime type
+        //as the decision to compress generally depends on size and mime type
         final AllowedContentEncodings encoding = exchange.getAttachment(AllowedContentEncodings.ATTACHMENT_KEY);
         if(encoding != null) {
             this.contentEncoding = encoding.getCurrentContentEncoding();
         } else {
-            this.contentEncoding = exchange.getResponseHeaders().getFirst(Headers.CONTENT_ENCODING);
+            this.contentEncoding = HttpString.toString(exchange.getResponseHeaders().getFirst(Headers.CONTENT_ENCODING));
         }
         this.responseCode = exchange.getResponseCode();
     }

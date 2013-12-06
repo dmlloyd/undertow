@@ -40,6 +40,7 @@ import io.undertow.servlet.util.IteratorEnumeration;
 import io.undertow.util.CanonicalPathUtils;
 import io.undertow.util.DateUtils;
 import io.undertow.util.HeaderMap;
+import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.LocaleUtils;
@@ -160,13 +161,13 @@ public final class HttpServletRequestImpl implements HttpServletRequest {
 
     @Override
     public long getDateHeader(final String name) {
-        String header = exchange.getRequestHeaders().getFirst(name);
+        HttpString header = exchange.getRequestHeaders().getFirst(name);
         if (header == null) {
             return -1;
         }
-        Date date = DateUtils.parseDate(header);
+        Date date = DateUtils.parseDate(header.toString());
         if (date == null) {
-            throw UndertowServletMessages.MESSAGES.headerCannotBeConvertedToDate(header);
+            throw UndertowServletMessages.MESSAGES.headerCannotBeConvertedToDate(header.toString());
         }
         return date.getTime();
     }
@@ -174,22 +175,22 @@ public final class HttpServletRequestImpl implements HttpServletRequest {
     @Override
     public String getHeader(final String name) {
         HeaderMap headers = exchange.getRequestHeaders();
-        return headers.getFirst(name);
+        return HttpString.toString(headers.getFirst(name));
     }
 
     public String getHeader(final HttpString name) {
         HeaderMap headers = exchange.getRequestHeaders();
-        return headers.getFirst(name);
+        return HttpString.toString(headers.getFirst(name));
     }
 
 
     @Override
     public Enumeration<String> getHeaders(final String name) {
-        List<String> headers = exchange.getRequestHeaders().get(name);
+        HeaderValues headers = exchange.getRequestHeaders().get(name);
         if (headers == null) {
             return EmptyEnumeration.instance();
         }
-        return new IteratorEnumeration<String>(headers.iterator());
+        return new IteratorEnumeration<String>(headers.asStrings().iterator());
     }
 
     @Override
@@ -445,8 +446,8 @@ public final class HttpServletRequestImpl implements HttpServletRequest {
         readStarted = true;
         if (parts == null) {
             final List<Part> parts = new ArrayList<Part>();
-            String mimeType = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
-            if (mimeType != null && mimeType.startsWith(MultiPartParserDefinition.MULTIPART_FORM_DATA)) {
+            HttpString mimeType = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
+            if (mimeType != null && mimeType.toString().startsWith(MultiPartParserDefinition.MULTIPART_FORM_DATA)) {
                 final ManagedServlet originalServlet = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY).getOriginalServletPathMatch().getServletChain().getManagedServlet();
                 final FormDataParser parser = originalServlet.getFormParserFactory().createParser(exchange);
                 if(parser != null) {
@@ -485,11 +486,11 @@ public final class HttpServletRequestImpl implements HttpServletRequest {
         if (characterEncoding != null) {
             return characterEncoding.name();
         }
-        String contentType = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
+        HttpString contentType = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
         if (contentType == null) {
             return null;
         }
-        return Headers.extractTokenFromHeader(contentType, "charset");
+        return Headers.extractTokenFromHeader(contentType.toString(), "charset");
     }
 
     @Override
@@ -521,11 +522,8 @@ public final class HttpServletRequestImpl implements HttpServletRequest {
 
     @Override
     public long getContentLengthLong() {
-        final String contentLength = getHeader(Headers.CONTENT_LENGTH);
-        if (contentLength == null || contentLength.isEmpty()) {
-            return -1;
-        }
-        return Long.parseLong(contentLength);
+        final HttpString contentLength = exchange.getRequestHeaders().getFirst(Headers.CONTENT_LENGTH);
+        return contentLength == null ? -1 : contentLength.toLong();
     }
 
     @Override
@@ -727,9 +725,9 @@ public final class HttpServletRequestImpl implements HttpServletRequest {
             if (characterEncoding != null) {
                 charSet = characterEncoding;
             } else {
-                String contentType = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
+                HttpString contentType = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
                 if (contentType != null) {
-                    String c = Headers.extractTokenFromHeader(contentType, "charset");
+                    String c = Headers.extractTokenFromHeader(contentType.toString(), "charset");
                     if (c != null) {
                         try {
                             charSet = Charset.forName(c);
@@ -800,7 +798,7 @@ public final class HttpServletRequestImpl implements HttpServletRequest {
 
     @Override
     public Enumeration<Locale> getLocales() {
-        final List<String> acceptLanguage = exchange.getRequestHeaders().get(Headers.ACCEPT_LANGUAGE);
+        final List<HttpString> acceptLanguage = exchange.getRequestHeaders().get(Headers.ACCEPT_LANGUAGE);
         List<Locale> ret = LocaleUtils.getLocalesFromHeader(acceptLanguage);
         return new IteratorEnumeration<Locale>(ret.iterator());
     }

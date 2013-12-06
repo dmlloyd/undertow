@@ -212,6 +212,13 @@ final class AjpClientRequestConduit extends AbstractStreamSinkConduit<StreamSink
         buf.put((byte) 0);
     }
 
+    private void putString(final ByteBuffer buf, HttpString value) {
+        final int length = value.length();
+        putInt(buf, length);
+        value.appendTo(buf);
+        buf.put((byte) 0);
+    }
+
     void setBodyChunkRequested(int requestedSize) {
         this.requestedChunkSize = requestedSize;
         if (anyAreSet(state, FLAG_WRITES_RESUMED)) {
@@ -258,7 +265,7 @@ final class AjpClientRequestConduit extends AbstractStreamSinkConduit<StreamSink
                 throw UndertowClientMessages.MESSAGES.unknownMethod(request.getMethod());
             }
             buffer.put((byte) (int) methodNp);
-            putString(buffer, exchange.getRequest().getProtocol().toString());
+            putString(buffer, exchange.getRequest().getProtocol());
             putString(buffer, path);
             putString(buffer, notNull(request.getAttachment(ProxiedRequestAttachments.REMOTE_ADDRESS)));
             putString(buffer, notNull(request.getAttachment(ProxiedRequestAttachments.REMOTE_HOST)));
@@ -277,12 +284,12 @@ final class AjpClientRequestConduit extends AbstractStreamSinkConduit<StreamSink
 
 
             for (final HttpString header : responseHeaders.getHeaderNames()) {
-                for (String headerValue : responseHeaders.get(header)) {
+                for (HttpString headerValue : responseHeaders.get(header)) {
                     Integer headerCode = HEADER_MAP.get(header);
                     if (headerCode != null) {
                         putInt(buffer, headerCode);
                     } else {
-                        putString(buffer, header.toString());
+                        putString(buffer, header);
                     }
                     putString(buffer, headerValue);
                 }

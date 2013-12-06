@@ -23,7 +23,9 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.HttpUpgradeListener;
 import io.undertow.util.CopyOnWriteMap;
+import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import org.xnio.ChannelListener;
 import org.xnio.ChannelListeners;
@@ -128,10 +130,10 @@ public final class ChannelUpgradeHandler implements HttpHandler {
     }
 
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-        final List<String> upgradeStrings = exchange.getRequestHeaders().get(Headers.UPGRADE);
+        final HeaderValues upgradeStrings = exchange.getRequestHeaders().get(Headers.UPGRADE);
         if (upgradeStrings != null && exchange.getRequestMethod().equalsIgnoreCase(Methods.GET)) {
-            for (String string : upgradeStrings) {
-                final List<Holder> holders = handlers.get(string);
+            for (HttpString string : upgradeStrings) {
+                final List<Holder> holders = handlers.get(string.toString());
                 if (holders != null) {
                     for (Holder holder : holders) {
                         final ChannelListener<? super StreamConnection> listener = holder.listener;

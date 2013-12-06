@@ -31,6 +31,7 @@ import io.undertow.testutils.AjpIgnore;
 import io.undertow.testutils.DefaultServer;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import io.undertow.util.StringReadChannelListener;
 import org.junit.AfterClass;
@@ -93,7 +94,7 @@ public class HttpClientTestCase {
 
     static void sendMessage(final HttpServerExchange exchange) {
         exchange.setResponseCode(200);
-        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, message.length() + "");
+        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, new HttpString(message.length() + ""));
         final Sender sender = exchange.getResponseSender();
         sender.send(message);
     }
@@ -163,7 +164,7 @@ public class HttpClientTestCase {
         try {
             ClientRequest request = new ClientRequest().setPath("/1324").setMethod(Methods.GET);
             final List<ClientResponse> responses = new CopyOnWriteArrayList<ClientResponse>();
-            request.getRequestHeaders().add(Headers.CONNECTION, Headers.CLOSE.toString());
+            request.getRequestHeaders().addLast(Headers.CONNECTION, Headers.CLOSE);
             connection.sendRequest(request, createClientCallback(responses, latch));
             latch.await();
             final ClientResponse response = responses.iterator().next();

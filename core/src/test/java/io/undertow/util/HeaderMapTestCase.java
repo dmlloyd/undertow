@@ -44,14 +44,14 @@ public final class HeaderMapTestCase {
     @Test
     public void testSimple() {
         final HeaderMap headerMap = new HeaderMap();
-        headerMap.add(Headers.HOST, "yay.undertow.io");
+        headerMap.addLast(Headers.HOST, new HttpString("yay.undertow.io"));
         assertEquals(1, headerMap.size());
         assertNotEquals(-1L, headerMap.fastIterate());
         assertEquals(-1L, headerMap.fiNext(headerMap.fastIterate()));
         assertEquals(Headers.HOST, headerMap.fiCurrent(headerMap.fastIterate()).getHeaderName());
-        assertEquals("yay.undertow.io", headerMap.getFirst(Headers.HOST));
-        assertEquals("yay.undertow.io", headerMap.getLast(Headers.HOST));
-        assertEquals("yay.undertow.io", headerMap.get(Headers.HOST, 0));
+        assertEquals(new HttpString("yay.undertow.io"), headerMap.getFirst(Headers.HOST));
+        assertEquals(new HttpString("yay.undertow.io"), headerMap.getLast(Headers.HOST));
+        assertEquals(new HttpString("yay.undertow.io"), headerMap.get(Headers.HOST, 0));
     }
 
     @Test
@@ -59,14 +59,14 @@ public final class HeaderMapTestCase {
         final HeaderMap headerMap = new HeaderMap();
         for (HttpString item : HTTP_STRING_LIST) {
             for (int i = 0; i < (item.hashCodeIgnoreCase() & 7) + 1; i ++)
-                headerMap.add(item, "Test value");
+                headerMap.addLast(item, new HttpString("Test value"));
         }
         for (HttpString item : HTTP_STRING_LIST) {
             assertTrue(String.format("Missing %s (hash %08x)", item, Integer.valueOf(item.hashCodeIgnoreCase())), headerMap.contains(item));
             assertNotNull(headerMap.get(item));
             assertEquals((item.hashCodeIgnoreCase() & 7) + 1, headerMap.get(item).size());
-            assertEquals("Test value", headerMap.getFirst(item));
-            assertEquals("Test value", headerMap.getLast(item));
+            assertEquals(new HttpString("Test value"), headerMap.getFirst(item));
+            assertEquals(new HttpString("Test value"), headerMap.getLast(item));
         }
         assertEquals(HTTP_STRING_LIST.size(), headerMap.size());
         for (HttpString item : HTTP_STRING_LIST) {
@@ -80,11 +80,11 @@ public final class HeaderMapTestCase {
     @Test
     public void testCollision() {
         HeaderMap headerMap = new HeaderMap();
-        headerMap.put(new HttpString("Link"), "a");
-        headerMap.put(new HttpString("Rest"), "b");
-        Assert.assertEquals("a", headerMap.getFirst(new HttpString("Link")));
-        Assert.assertEquals("b", headerMap.getFirst(new HttpString("Rest")));
-        Assert.assertEquals("a", headerMap.getFirst("Link"));
-        Assert.assertEquals("b", headerMap.getFirst("Rest"));
+        headerMap.put(new HttpString("Link"), new HttpString("a"));
+        headerMap.put(new HttpString("Rest"), new HttpString("b"));
+        Assert.assertEquals(new HttpString("a"), headerMap.getFirst(new HttpString("Link")));
+        Assert.assertEquals(new HttpString("b"), headerMap.getFirst(new HttpString("Rest")));
+        Assert.assertEquals(new HttpString("a"), headerMap.getFirst("Link"));
+        Assert.assertEquals(new HttpString("b"), headerMap.getFirst("Rest"));
     }
 }

@@ -7,6 +7,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 
+import io.undertow.util.HttpString;
 import javax.sql.DataSource;
 import java.net.InetSocketAddress;
 import java.sql.Connection;
@@ -114,10 +115,10 @@ public class JDBCLogHandler implements HttpHandler, Runnable {
         jdbcLogAttribute.status = exchange.getResponseCode();
 
         if (jdbcLogAttribute.pattern.equals("combined")) {
-            jdbcLogAttribute.virtualHost = exchange.getRequestHeaders().getFirst(Headers.HOST);
+            jdbcLogAttribute.virtualHost = HttpString.toString(exchange.getRequestHeaders().getFirst(Headers.HOST));
             jdbcLogAttribute.method = exchange.getRequestMethod().toString();
-            jdbcLogAttribute.referer = exchange.getRequestHeaders().getFirst(Headers.REFERER);
-            jdbcLogAttribute.userAgent = exchange.getRequestHeaders().getFirst(Headers.USER_AGENT);
+            jdbcLogAttribute.referer = HttpString.toString(exchange.getRequestHeaders().getFirst(Headers.REFERER));
+            jdbcLogAttribute.userAgent = HttpString.toString(exchange.getRequestHeaders().getFirst(Headers.USER_AGENT));
         }
 
         this.pendingMessages.add(jdbcLogAttribute);

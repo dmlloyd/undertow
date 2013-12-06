@@ -11,6 +11,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import io.undertow.util.LocaleUtils;
 
 /**
@@ -55,7 +56,7 @@ public class RequestDumplingHandler implements HttpHandler {
             }
         }
         for (HeaderValues header : exchange.getRequestHeaders()) {
-            for (String value : header) {
+            for (HttpString value : header) {
                 sb.append("            header=" + header.getHeaderName() + "=" + value + "\n");
             }
         }
@@ -110,7 +111,7 @@ public class RequestDumplingHandler implements HttpHandler {
                     }
                 }
                 for (HeaderValues header : exchange.getResponseHeaders()) {
-                    for (String value : header) {
+                    for (HttpString value : header) {
                         sb.append("            header=" + header.getHeaderName() + "=" + value + "\n");
                     }
                 }

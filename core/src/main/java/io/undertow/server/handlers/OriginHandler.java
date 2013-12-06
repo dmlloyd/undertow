@@ -18,18 +18,18 @@
 
 package io.undertow.server.handlers;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import io.undertow.Handlers;
 import io.undertow.UndertowLogger;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 
 /**
  * A handler for the HTTP Origin header.
@@ -39,7 +39,7 @@ import io.undertow.util.Headers;
 public class OriginHandler implements HttpHandler {
 
     private volatile HttpHandler originFailedHandler = ResponseCodeHandler.HANDLE_403;
-    private volatile Set<String> allowedOrigins = new HashSet<String>();
+    private volatile Set<HttpString> allowedOrigins = new HashSet<HttpString>();
     private volatile boolean requireAllOrigins = true;
     private volatile boolean requireOriginHeader = true;
     private volatile HttpHandler next = ResponseCodeHandler.HANDLE_404;
@@ -47,7 +47,7 @@ public class OriginHandler implements HttpHandler {
 
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-        final List<String> origin = exchange.getRequestHeaders().get(Headers.ORIGIN);
+        final HeaderValues origin = exchange.getRequestHeaders().get(Headers.ORIGIN);
         if (origin == null) {
             if (requireOriginHeader) {
                 //TODO: Is 403 (Forbidden) the best response code
@@ -60,7 +60,7 @@ public class OriginHandler implements HttpHandler {
         } else {
             boolean found = false;
             final boolean requireAllOrigins = this.requireAllOrigins;
-            for (final String header : origin) {
+            for (final HttpString header : origin) {
                 if (allowedOrigins.contains(header)) {
                     found = true;
                     if (!requireAllOrigins) {
@@ -85,28 +85,32 @@ public class OriginHandler implements HttpHandler {
         next.handleRequest(exchange);
     }
 
-    public synchronized OriginHandler addAllowedOrigin(final String origin) {
-        final Set<String> allowedOrigins = new HashSet<String>(this.allowedOrigins);
+    public synchronized OriginHandler addAllowedOrigin(final HttpString origin) {
+        final Set<HttpString> allowedOrigins = new HashSet<HttpString>(this.allowedOrigins);
         allowedOrigins.add(origin);
         this.allowedOrigins = Collections.unmodifiableSet(allowedOrigins);
         return this;
     }
 
-    public synchronized OriginHandler addAllowedOrigins(final Collection<String> origins) {
-        final Set<String> allowedOrigins = new HashSet<String>(this.allowedOrigins);
-        allowedOrigins.addAll(origins);
+    public synchronized OriginHandler addAllowedOriginStrings(final Collection<String> origins) {
+        final Set<HttpString> allowedOrigins = new HashSet<HttpString>(this.allowedOrigins);
+        for (String origin : origins) {
+            allowedOrigins.add(new HttpString(origin));
+        }
         this.allowedOrigins = Collections.unmodifiableSet(allowedOrigins);
         return this;
     }
 
-    public synchronized OriginHandler addAllowedOrigins(final String... origins) {
-        final Set<String> allowedOrigins = new HashSet<String>(this.allowedOrigins);
-        allowedOrigins.addAll(Arrays.asList(origins));
+    public synchronized OriginHandler addAllowedOriginStrings(final String... origins) {
+        final Set<HttpString> allowedOrigins = new HashSet<HttpString>(this.allowedOrigins);
+        for (String origin : origins) {
+            allowedOrigins.add(new HttpString(origin));
+        }
         this.allowedOrigins = Collections.unmodifiableSet(allowedOrigins);
         return this;
     }
 
-    public synchronized Set<String> getAllowedOrigins() {
+    public synchronized Set<HttpString> getAllowedOrigins() {
         return allowedOrigins;
     }
 

@@ -6,6 +6,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.DateUtils;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 
 /**
  * Class that adds the Date: header to a HTTP response.
@@ -30,13 +31,13 @@ public class DateHandler implements HttpHandler {
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
         long time = System.nanoTime();
         if(time < nextUpdateTime) {
-            exchange.getResponseHeaders().put(Headers.DATE, cachedDateString);
+            exchange.getResponseHeaders().put(Headers.DATE, new HttpString(cachedDateString));
         } else {
             long realTime = System.currentTimeMillis();
             String dateString = DateUtils.toDateString(new Date(realTime));
             cachedDateString = dateString;
             nextUpdateTime = time + 1000000000;
-            exchange.getResponseHeaders().put(Headers.DATE, dateString);
+            exchange.getResponseHeaders().put(Headers.DATE, new HttpString(dateString));
         }
         next.handleRequest(exchange);
     }

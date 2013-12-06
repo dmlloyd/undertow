@@ -93,7 +93,7 @@ public final class HttpServerConnection extends AbstractServerConnection {
         exchange.setRequestURI(exchange.getRequestURI(), exchange.isHostIncludedInRequestURI());
         exchange.setRequestPath(exchange.getRequestPath());
         exchange.setRelativePath(exchange.getRelativePath());
-        newExchange.getRequestHeaders().put(Headers.CONNECTION, Headers.KEEP_ALIVE.toString());
+        newExchange.getRequestHeaders().put(Headers.CONNECTION, Headers.KEEP_ALIVE);
         newExchange.getRequestHeaders().put(Headers.CONTENT_LENGTH, 0);
         newExchange.setPersistent(true);
 

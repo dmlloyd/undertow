@@ -37,6 +37,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import io.undertow.util.MalformedMessageException;
 import io.undertow.util.MultipartParser;
 import org.xnio.FileAccess;
@@ -70,9 +71,9 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
 
     @Override
     public FormDataParser create(final HttpServerExchange exchange) {
-        String mimeType = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
-        if (mimeType != null && mimeType.startsWith(MULTIPART_FORM_DATA)) {
-            String boundary = Headers.extractTokenFromHeader(mimeType, "boundary");
+        HttpString mimeType = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
+        if (mimeType != null && mimeType.toString().startsWith(MULTIPART_FORM_DATA)) {
+            String boundary = Headers.extractTokenFromHeader(mimeType.toString(), "boundary");
             if(boundary == null) {
                 UndertowLogger.REQUEST_LOGGER.debugf("Could not find boundary in multipart request with ContentType: %s, multipart data will not be available", mimeType);
                 return null;
@@ -221,11 +222,11 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         public void beginPart(final HeaderMap headers) {
             this.currentFileSize = 0;
             this.headers = headers;
-            final String disposition = headers.getFirst(Headers.CONTENT_DISPOSITION);
+            final HttpString disposition = headers.getFirst(Headers.CONTENT_DISPOSITION);
             if (disposition != null) {
-                if (disposition.startsWith("form-data")) {
-                    currentName = Headers.extractQuotedValueFromHeader(disposition, "name");
-                    fileName = Headers.extractQuotedValueFromHeader(disposition, "filename");
+                if (disposition.toString().startsWith("form-data")) {
+                    currentName = Headers.extractQuotedValueFromHeader(disposition.toString(), "name");
+                    fileName = Headers.extractQuotedValueFromHeader(disposition.toString(), "filename");
                     if (fileName != null) {
                         try {
                             file = File.createTempFile("undertow", "upload", tempFileLocation);
@@ -270,9 +271,9 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
 
                 try {
                     String charset = defaultEncoding;
-                    String contentType = headers.getFirst(Headers.CONTENT_TYPE);
+                    HttpString contentType = headers.getFirst(Headers.CONTENT_TYPE);
                     if (contentType != null) {
-                        String cs = Headers.extractTokenFromHeader(contentType, "charset");
+                        String cs = Headers.extractTokenFromHeader(contentType.toString(), "charset");
                         if (cs != null) {
                             charset = cs;
                         }

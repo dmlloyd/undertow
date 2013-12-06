@@ -78,10 +78,10 @@ public class ResponseParserResumeTestCase {
         Assert.assertEquals("OK", result.getReasonPhrase());
         Assert.assertSame(Protocols.HTTP_1_1, result.getProtocol());
 
-        Assert.assertEquals("www.somehost.net", result.getResponseHeaders().getFirst(new HttpString("Host")));
-        Assert.assertEquals("some value", result.getResponseHeaders().getFirst(new HttpString("OtherHeader")));
-        Assert.assertEquals("another", result.getResponseHeaders().getFirst(new HttpString("Hostee")));
-        Assert.assertEquals("a", result.getResponseHeaders().getFirst(new HttpString("Accept-garbage")));
+        Assert.assertEquals("www.somehost.net", result.getResponseHeaders().getFirst(new HttpString("Host")).toString());
+        Assert.assertEquals("some value", result.getResponseHeaders().getFirst(new HttpString("OtherHeader")).toString());
+        Assert.assertEquals("another", result.getResponseHeaders().getFirst(new HttpString("Hostee")).toString());
+        Assert.assertEquals("a", result.getResponseHeaders().getFirst(new HttpString("Accept-garbage")).toString());
         Assert.assertEquals(4, result.getResponseHeaders().getHeaderNames().size());
 
         Assert.assertEquals(ResponseParseState.PARSE_COMPLETE, context.state);

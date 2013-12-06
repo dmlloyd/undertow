@@ -6,9 +6,10 @@ import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 
 /**
- * A redirect handler that redirects to the specifed location via a 302 redirect.
+ * A redirect handler that redirects to the specified location via a 302 redirect.
  * <p/>
  * The location is specified as an exchange attribute string.
  *
@@ -32,7 +33,7 @@ public class RedirectHandler implements HttpHandler {
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
         exchange.setResponseCode(302);
-        exchange.getResponseHeaders().put(Headers.LOCATION, attribute.readAttribute(exchange));
+        exchange.getResponseHeaders().put(Headers.LOCATION, new HttpString(attribute.readAttribute(exchange)));
         exchange.endExchange();
     }
 

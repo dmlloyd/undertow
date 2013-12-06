@@ -67,7 +67,7 @@ public final class AjpServerConnection extends AbstractServerConnection {
         newExchange.setProtocol(exchange.getProtocol());
         newExchange.setRequestMethod(exchange.getRequestMethod());
         newExchange.setRequestPath(exchange.getRequestPath());
-        newExchange.getRequestHeaders().put(Headers.CONNECTION, Headers.KEEP_ALIVE.toString());
+        newExchange.getRequestHeaders().put(Headers.CONNECTION, Headers.KEEP_ALIVE);
         newExchange.getRequestHeaders().put(Headers.CONTENT_LENGTH, 0);
 
         newExchange.addExchangeCompleteListener(new ExchangeCompletionListener() {

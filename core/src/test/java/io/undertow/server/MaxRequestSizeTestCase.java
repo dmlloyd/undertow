@@ -30,6 +30,7 @@ import io.undertow.testutils.HttpClientUtils;
 import io.undertow.testutils.ProxyIgnore;
 import io.undertow.util.Headers;
 import io.undertow.testutils.TestHttpClient;
+import io.undertow.util.HttpString;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -65,7 +66,7 @@ public class MaxRequestSizeTestCase {
                     outputStream.close();
                 } catch (IOException e) {
                     try {
-                        exchange.getResponseHeaders().put(Headers.CONNECTION, "close");
+                        exchange.getResponseHeaders().put(Headers.CONNECTION, new HttpString("close"));
                         exchange.setResponseCode(500);
                     } catch (Exception ignore) {
 

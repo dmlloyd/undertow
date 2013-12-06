@@ -38,7 +38,7 @@ public class StatusCodes {
     public static final int RESET_CONTENT = 205;
     public static final int PARTIAL_CONTENT = 206;
     public static final int MULTIPLE_CHOICES = 300;
-    public static final int MOVED_PERMENANTLY = 301;
+    public static final int MOVED_PERMANENTLY = 301;
     public static final int FOUND = 302;
     public static final int SEE_OTHER = 303;
     public static final int NOT_MODIFIED = 304;
@@ -79,7 +79,7 @@ public class StatusCodes {
     public static final String RESET_CONTENT_STRING = "Reset Content";
     public static final String PARTIAL_CONTENT_STRING = "Partial Content";
     public static final String MULTIPLE_CHOICES_STRING = "Multiple Choices";
-    public static final String MOVED_PERMENANTLY_STRING = "Moved Permanently";
+    public static final String MOVED_PERMANENTLY_STRING = "Moved Permanently";
     public static final String FOUND_STRING = "Found";
     public static final String SEE_OTHER_STRING = "See Other";
     public static final String NOT_MODIFIED_STRING = "Not Modified";
@@ -110,51 +110,92 @@ public class StatusCodes {
     public static final String GATEWAY_TIME_OUT_STRING = "Gateway Time-out";
     public static final String HTTP_VERSION_NOT_SUPPORTED_STRING = "HTTP Version not supported";
 
+    public static final HttpString CONTINUE_HTTP_STRING = new HttpString(CONTINUE_STRING);
+    public static final HttpString SWITCHING_PROTOCOLS_HTTP_STRING = new HttpString(SWITCHING_PROTOCOLS_STRING);
+    public static final HttpString OK_HTTP_STRING = new HttpString(OK_STRING);
+    public static final HttpString CREATED_HTTP_STRING = new HttpString(CREATED_STRING);
+    public static final HttpString ACCEPTED_HTTP_STRING = new HttpString(ACCEPTED_STRING);
+    public static final HttpString NON_AUTHORITATIVE_INFORMATION_HTTP_STRING = new HttpString(NON_AUTHORITATIVE_INFORMATION_STRING);
+    public static final HttpString NO_CONTENT_HTTP_STRING = new HttpString(NO_CONTENT_STRING);
+    public static final HttpString RESET_CONTENT_HTTP_STRING = new HttpString(RESET_CONTENT_STRING);
+    public static final HttpString PARTIAL_CONTENT_HTTP_STRING = new HttpString(PARTIAL_CONTENT_STRING);
+    public static final HttpString MULTIPLE_CHOICES_HTTP_STRING = new HttpString(MULTIPLE_CHOICES_STRING);
+    public static final HttpString MOVED_PERMANENTLY_HTTP_STRING = new HttpString(MOVED_PERMANENTLY_STRING);
+    public static final HttpString FOUND_HTTP_STRING = new HttpString(FOUND_STRING);
+    public static final HttpString SEE_OTHER_HTTP_STRING = new HttpString(SEE_OTHER_STRING);
+    public static final HttpString NOT_MODIFIED_HTTP_STRING = new HttpString(NOT_MODIFIED_STRING);
+    public static final HttpString USE_PROXY_HTTP_STRING = new HttpString(USE_PROXY_STRING);
+    public static final HttpString TEMPORARY_REDIRECT_HTTP_STRING = new HttpString(TEMPORARY_REDIRECT_STRING);
+    public static final HttpString BAD_REQUEST_HTTP_STRING = new HttpString(BAD_REQUEST_STRING);
+    public static final HttpString UNAUTHORIZED_HTTP_STRING = new HttpString(UNAUTHORIZED_STRING);
+    public static final HttpString PAYMENT_REQUIRED_HTTP_STRING = new HttpString(PAYMENT_REQUIRED_STRING);
+    public static final HttpString FORBIDDEN_HTTP_STRING = new HttpString(FORBIDDEN_STRING);
+    public static final HttpString NOT_FOUND_HTTP_STRING = new HttpString(NOT_FOUND_STRING);
+    public static final HttpString METHOD_NOT_ALLOWED_HTTP_STRING = new HttpString(METHOD_NOT_ALLOWED_STRING);
+    public static final HttpString NOT_ACCEPTABLE_HTTP_STRING = new HttpString(NOT_ACCEPTABLE_STRING);
+    public static final HttpString PROXY_AUTHENTICATION_REQUIRED_HTTP_STRING = new HttpString(PROXY_AUTHENTICATION_REQUIRED_STRING);
+    public static final HttpString REQUEST_TIME_OUT_HTTP_STRING = new HttpString(REQUEST_TIME_OUT_STRING);
+    public static final HttpString CONFLICT_HTTP_STRING = new HttpString(CONFLICT_STRING);
+    public static final HttpString GONE_HTTP_STRING = new HttpString(GONE_STRING);
+    public static final HttpString LENGTH_REQUIRED_HTTP_STRING = new HttpString(LENGTH_REQUIRED_STRING);
+    public static final HttpString PRECONDITION_FAILED_HTTP_STRING = new HttpString(PRECONDITION_FAILED_STRING);
+    public static final HttpString REQUEST_ENTITY_TOO_LARGE_HTTP_STRING = new HttpString(REQUEST_ENTITY_TOO_LARGE_STRING);
+    public static final HttpString REQUEST_URI_TOO_LARGE_HTTP_STRING = new HttpString(REQUEST_URI_TOO_LARGE_STRING);
+    public static final HttpString UNSUPPORTED_MEDIA_TYPE_HTTP_STRING = new HttpString(UNSUPPORTED_MEDIA_TYPE_STRING);
+    public static final HttpString REQUEST_RANGE_NOT_SATISFIABLE_HTTP_STRING = new HttpString(REQUEST_RANGE_NOT_SATISFIABLE_STRING);
+    public static final HttpString EXPECTATION_FAILED_HTTP_STRING = new HttpString(EXPECTATION_FAILED_STRING);
+    public static final HttpString INTERNAL_SERVER_ERROR_HTTP_STRING = new HttpString(INTERNAL_SERVER_ERROR_STRING);
+    public static final HttpString NOT_IMPLEMENTED_HTTP_STRING = new HttpString(NOT_IMPLEMENTED_STRING);
+    public static final HttpString BAD_GATEWAY_HTTP_STRING = new HttpString(BAD_GATEWAY_STRING);
+    public static final HttpString SERVICE_UNAVAILABLE_HTTP_STRING = new HttpString(SERVICE_UNAVAILABLE_STRING);
+    public static final HttpString GATEWAY_TIME_OUT_HTTP_STRING = new HttpString(GATEWAY_TIME_OUT_STRING);
+    public static final HttpString HTTP_VERSION_NOT_SUPPORTED_HTTP_STRING = new HttpString(HTTP_VERSION_NOT_SUPPORTED_STRING);
+
     static {
-        putCode(CONTINUE, CONTINUE_STRING);
-        putCode(SWITCHING_PROTOCOLS, SWITCHING_PROTOCOLS_STRING);
-        putCode(OK, OK_STRING);
-        putCode(CREATED, CREATED_STRING);
-        putCode(ACCEPTED, ACCEPTED_STRING);
-        putCode(NON_AUTHORITATIVE_INFORMATION, NON_AUTHORITATIVE_INFORMATION_STRING);
-        putCode(NO_CONTENT, NO_CONTENT_STRING);
-        putCode(RESET_CONTENT, RESET_CONTENT_STRING);
-        putCode(PARTIAL_CONTENT, PARTIAL_CONTENT_STRING);
-        putCode(MULTIPLE_CHOICES, MULTIPLE_CHOICES_STRING);
-        putCode(MOVED_PERMENANTLY, MOVED_PERMENANTLY_STRING);
-        putCode(FOUND, FOUND_STRING);
-        putCode(SEE_OTHER, SEE_OTHER_STRING);
-        putCode(NOT_MODIFIED, NOT_MODIFIED_STRING);
-        putCode(USE_PROXY, USE_PROXY_STRING);
-        putCode(TEMPORARY_REDIRECT, TEMPORARY_REDIRECT_STRING);
-        putCode(BAD_REQUEST, BAD_REQUEST_STRING);
-        putCode(UNAUTHORIZED, UNAUTHORIZED_STRING);
-        putCode(PAYMENT_REQUIRED, PAYMENT_REQUIRED_STRING);
-        putCode(FORBIDDEN, FORBIDDEN_STRING);
-        putCode(NOT_FOUND, NOT_FOUND_STRING);
-        putCode(METHOD_NOT_ALLOWED, METHOD_NOT_ALLOWED_STRING);
-        putCode(NOT_ACCEPTABLE, NOT_ACCEPTABLE_STRING);
-        putCode(PROXY_AUTHENTICATION_REQUIRED, PROXY_AUTHENTICATION_REQUIRED_STRING);
-        putCode(REQUEST_TIME_OUT, REQUEST_TIME_OUT_STRING);
-        putCode(CONFLICT, CONFLICT_STRING);
-        putCode(GONE, GONE_STRING);
-        putCode(LENGTH_REQUIRED, LENGTH_REQUIRED_STRING);
-        putCode(PRECONDITION_FAILED, PRECONDITION_FAILED_STRING);
-        putCode(REQUEST_ENTITY_TOO_LARGE, REQUEST_ENTITY_TOO_LARGE_STRING);
-        putCode(REQUEST_URI_TOO_LARGE, REQUEST_URI_TOO_LARGE_STRING);
-        putCode(UNSUPPORTED_MEDIA_TYPE, UNSUPPORTED_MEDIA_TYPE_STRING);
-        putCode(REQUEST_RANGE_NOT_SATISFIABLE, REQUEST_RANGE_NOT_SATISFIABLE_STRING);
-        putCode(EXPECTATION_FAILED, EXPECTATION_FAILED_STRING);
-        putCode(INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR_STRING);
-        putCode(NOT_IMPLEMENTED, NOT_IMPLEMENTED_STRING);
-        putCode(BAD_GATEWAY, BAD_GATEWAY_STRING);
-        putCode(SERVICE_UNAVAILABLE, SERVICE_UNAVAILABLE_STRING);
-        putCode(GATEWAY_TIME_OUT, GATEWAY_TIME_OUT_STRING);
-        putCode(HTTP_VERSION_NOT_SUPPORTED, HTTP_VERSION_NOT_SUPPORTED_STRING);
+        putCode(CONTINUE, CONTINUE_HTTP_STRING);
+        putCode(SWITCHING_PROTOCOLS, SWITCHING_PROTOCOLS_HTTP_STRING);
+        putCode(OK, OK_HTTP_STRING);
+        putCode(CREATED, CREATED_HTTP_STRING);
+        putCode(ACCEPTED, ACCEPTED_HTTP_STRING);
+        putCode(NON_AUTHORITATIVE_INFORMATION, NON_AUTHORITATIVE_INFORMATION_HTTP_STRING);
+        putCode(NO_CONTENT, NO_CONTENT_HTTP_STRING);
+        putCode(RESET_CONTENT, RESET_CONTENT_HTTP_STRING);
+        putCode(PARTIAL_CONTENT, PARTIAL_CONTENT_HTTP_STRING);
+        putCode(MULTIPLE_CHOICES, MULTIPLE_CHOICES_HTTP_STRING);
+        putCode(MOVED_PERMANENTLY, MOVED_PERMANENTLY_HTTP_STRING);
+        putCode(FOUND, FOUND_HTTP_STRING);
+        putCode(SEE_OTHER, SEE_OTHER_HTTP_STRING);
+        putCode(NOT_MODIFIED, NOT_MODIFIED_HTTP_STRING);
+        putCode(USE_PROXY, USE_PROXY_HTTP_STRING);
+        putCode(TEMPORARY_REDIRECT, TEMPORARY_REDIRECT_HTTP_STRING);
+        putCode(BAD_REQUEST, BAD_REQUEST_HTTP_STRING);
+        putCode(UNAUTHORIZED, UNAUTHORIZED_HTTP_STRING);
+        putCode(PAYMENT_REQUIRED, PAYMENT_REQUIRED_HTTP_STRING);
+        putCode(FORBIDDEN, FORBIDDEN_HTTP_STRING);
+        putCode(NOT_FOUND, NOT_FOUND_HTTP_STRING);
+        putCode(METHOD_NOT_ALLOWED, METHOD_NOT_ALLOWED_HTTP_STRING);
+        putCode(NOT_ACCEPTABLE, NOT_ACCEPTABLE_HTTP_STRING);
+        putCode(PROXY_AUTHENTICATION_REQUIRED, PROXY_AUTHENTICATION_REQUIRED_HTTP_STRING);
+        putCode(REQUEST_TIME_OUT, REQUEST_TIME_OUT_HTTP_STRING);
+        putCode(CONFLICT, CONFLICT_HTTP_STRING);
+        putCode(GONE, GONE_HTTP_STRING);
+        putCode(LENGTH_REQUIRED, LENGTH_REQUIRED_HTTP_STRING);
+        putCode(PRECONDITION_FAILED, PRECONDITION_FAILED_HTTP_STRING);
+        putCode(REQUEST_ENTITY_TOO_LARGE, REQUEST_ENTITY_TOO_LARGE_HTTP_STRING);
+        putCode(REQUEST_URI_TOO_LARGE, REQUEST_URI_TOO_LARGE_HTTP_STRING);
+        putCode(UNSUPPORTED_MEDIA_TYPE, UNSUPPORTED_MEDIA_TYPE_HTTP_STRING);
+        putCode(REQUEST_RANGE_NOT_SATISFIABLE, REQUEST_RANGE_NOT_SATISFIABLE_HTTP_STRING);
+        putCode(EXPECTATION_FAILED, EXPECTATION_FAILED_HTTP_STRING);
+        putCode(INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR_HTTP_STRING);
+        putCode(NOT_IMPLEMENTED, NOT_IMPLEMENTED_HTTP_STRING);
+        putCode(BAD_GATEWAY, BAD_GATEWAY_HTTP_STRING);
+        putCode(SERVICE_UNAVAILABLE, SERVICE_UNAVAILABLE_HTTP_STRING);
+        putCode(GATEWAY_TIME_OUT, GATEWAY_TIME_OUT_HTTP_STRING);
+        putCode(HTTP_VERSION_NOT_SUPPORTED, HTTP_VERSION_NOT_SUPPORTED_HTTP_STRING);
 
     }
 
-    private static void putCode(int code, String reason) {
+    private static void putCode(int code, HttpString reason) {
         Entry e = new Entry(reason, code);
         int h = code % SIZE;
         if(TABLE[h] != null) {
@@ -166,20 +207,22 @@ public class StatusCodes {
     private StatusCodes() {
     }
 
-    public static final String getReason(final int code) {
+    private static final HttpString UNKNOWN = new HttpString("Unknown");
+
+    public static final HttpString getReason(final int code) {
         final Entry result = TABLE[code % SIZE];
         if (result == null || result.code != code) {
-            return "Unknown";
+            return UNKNOWN;
         } else {
             return result.reason;
         }
     }
 
     private static final class Entry {
-        final String reason;
+        final HttpString reason;
         final int code;
 
-        private Entry(final String reason, final int code) {
+        private Entry(final HttpString reason, final int code) {
             this.reason = reason;
             this.code = code;
         }

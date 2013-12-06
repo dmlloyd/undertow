@@ -33,12 +33,13 @@ import java.util.RandomAccess;
  *
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
-public final class HeaderValues extends AbstractCollection<String> implements Deque<String>, List<String>, RandomAccess {
+public final class HeaderValues extends AbstractCollection<HttpString> implements Deque<HttpString>, List<HttpString>, RandomAccess {
 
-    private static final String[] NO_STRINGS = new String[0];
+    private static final HttpString[] NO_STRINGS = new HttpString[0];
     final HttpString key;
     byte head, size;
     Object value;
+    AsStrings asStrings;
 
     HeaderValues(final HttpString key) {
         this.key = key;
@@ -61,8 +62,8 @@ public final class HeaderValues extends AbstractCollection<String> implements De
         if (size == 0) return;
         final byte head = this.head;
         final Object value = this.value;
-        if (value instanceof String[]) {
-            final String[] strings = (String[]) value;
+        if (value instanceof HttpString[]) {
+            final HttpString[] strings = (HttpString[]) value;
             final int len = strings.length;
             final int tail = head + size;
             if (tail > len) {
@@ -81,31 +82,31 @@ public final class HeaderValues extends AbstractCollection<String> implements De
         assert idx >= 0;
         assert idx < size;
         idx += head;
-        final int len = ((String[]) value).length;
+        final int len = ((HttpString[]) value).length;
         if (idx > len) {
             idx -= len;
         }
         return idx;
     }
 
-    public ListIterator<String> listIterator() {
+    public ListIterator<HttpString> listIterator() {
         return iterator(0, true);
     }
 
-    public ListIterator<String> listIterator(final int index) {
+    public ListIterator<HttpString> listIterator(final int index) {
         return iterator(index, true);
     }
 
-    public Iterator<String> iterator() {
+    public Iterator<HttpString> iterator() {
         return iterator(0, true);
     }
 
-    public Iterator<String> descendingIterator() {
+    public Iterator<HttpString> descendingIterator() {
         return iterator(0, false);
     }
 
-    private ListIterator<String> iterator(final int start, final boolean forwards) {
-        return new ListIterator<String>() {
+    ListIterator<HttpString> iterator(final int start, final boolean forwards) {
+        return new ListIterator<HttpString>() {
             int idx = start;
             int returned = -1;
 
@@ -117,9 +118,9 @@ public final class HeaderValues extends AbstractCollection<String> implements De
                 return idx > 0;
             }
 
-            public String next() {
+            public HttpString next() {
                 try {
-                    final String next;
+                    final HttpString next;
                     if (forwards) {
                         int idx = this.idx;
                         next = get(idx);
@@ -141,9 +142,9 @@ public final class HeaderValues extends AbstractCollection<String> implements De
                 return idx;
             }
 
-            public String previous() {
+            public HttpString previous() {
                 try {
-                    final String prev;
+                    final HttpString prev;
                     if (forwards) {
                         int idx = this.idx - 1;
                         prev = get(idx);
@@ -173,14 +174,14 @@ public final class HeaderValues extends AbstractCollection<String> implements De
                 returned = -1;
             }
 
-            public void set(final String headerValue) {
+            public void set(final HttpString headerValue) {
                 if (returned == -1) {
                     throw new IllegalStateException();
                 }
                 HeaderValues.this.set(returned, headerValue);
             }
 
-            public void add(final String headerValue) {
+            public void add(final HttpString headerValue) {
                 if (returned == -1) {
                     throw new IllegalStateException();
                 }
@@ -192,16 +193,16 @@ public final class HeaderValues extends AbstractCollection<String> implements De
         };
     }
 
-    public boolean offerFirst(final String headerValue) {
+    public boolean offerFirst(final HttpString headerValue) {
         int size = this.size;
         if (headerValue == null || size == Byte.MAX_VALUE) return false;
         final Object value = this.value;
-        if (value instanceof String[]) {
-            final String[] strings = (String[]) value;
+        if (value instanceof HttpString[]) {
+            final HttpString[] strings = (HttpString[]) value;
             final int len = strings.length;
             final byte head = this.head;
             if (size == len) {
-                final String[] newStrings = Arrays.copyOfRange(strings, head, head + len + (len << 1));
+                final HttpString[] newStrings = Arrays.copyOfRange(strings, head, head + len + (len << 1));
                 final int end = head + size;
                 if (end > len) {
                     System.arraycopy(strings, 0, newStrings, len - head, end - len);
@@ -219,7 +220,7 @@ public final class HeaderValues extends AbstractCollection<String> implements De
                 this.value = headerValue;
                 this.size = (byte) 1;
             } else {
-                this.value = new String[] { headerValue, (String) value, null, null };
+                this.value = new HttpString[] { headerValue, (HttpString) value, null, null };
                 this.size = (byte) 2;
             }
             this.head = 0;
@@ -227,17 +228,17 @@ public final class HeaderValues extends AbstractCollection<String> implements De
         return true;
     }
 
-    public boolean offerLast(final String headerValue) {
+    public boolean offerLast(final HttpString headerValue) {
         int size = this.size;
         if (headerValue == null || size == Byte.MAX_VALUE) return false;
         final Object value = this.value;
-        if (value instanceof String[]) {
-            final String[] strings = (String[]) value;
+        if (value instanceof HttpString[]) {
+            final HttpString[] strings = (HttpString[]) value;
             final int len = strings.length;
             final byte head = this.head;
             final int end = head + size;
             if (size == len) {
-                final String[] newStrings = Arrays.copyOfRange(strings, head, head + len + (len << 1));
+                final HttpString[] newStrings = Arrays.copyOfRange(strings, head, head + len + (len << 1));
                 if (end > len) {
                     System.arraycopy(strings, 0, newStrings, len - head, end - len);
                 }
@@ -254,7 +255,7 @@ public final class HeaderValues extends AbstractCollection<String> implements De
                 this.value = headerValue;
                 this.size = (byte) 1;
             } else {
-                this.value = new String[] { (String) value, headerValue, null, null };
+                this.value = new HttpString[] { (HttpString) value, headerValue, null, null };
                 this.size = (byte) 2;
             }
             this.head = 0;
@@ -262,15 +263,15 @@ public final class HeaderValues extends AbstractCollection<String> implements De
         return true;
     }
 
-    private boolean offer(int idx, final String headerValue) {
+    private boolean offer(int idx, final HttpString headerValue) {
         int size = this.size;
         if (idx < 0 || idx > size || size == Byte.MAX_VALUE || headerValue == null) return false;
         if (idx == 0) return offerFirst(headerValue);
         if (idx == size) return offerLast(headerValue);
         assert size >= 2; // must be >= 2 to pass the last two checks
         final Object value = this.value;
-        assert value instanceof String[];
-        final String[] strings = (String[]) value;
+        assert value instanceof HttpString[];
+        final HttpString[] strings = (HttpString[]) value;
         final int len = strings.length;
         final byte head = this.head;
         final int end = head + size;
@@ -279,7 +280,7 @@ public final class HeaderValues extends AbstractCollection<String> implements De
         if (size == len) {
             // Grow the list, copy each segment into new spots so that head = 0
             final int newLen = (len << 1) + len;
-            final String[] newStrings = new String[newLen];
+            final HttpString[] newStrings = new HttpString[newLen];
             if (head == 0) {
                 assert headIdx == len;
                 assert end == len;
@@ -330,17 +331,17 @@ public final class HeaderValues extends AbstractCollection<String> implements De
         return true;
     }
 
-    public String pollFirst() {
+    public HttpString pollFirst() {
         final byte size = this.size;
         if (size == 0) return null;
 
         final Object value = this.value;
-        if (value instanceof String) {
+        if (value instanceof HttpString) {
             this.size = 0;
             this.value = null;
-            return (String) value;
+            return (HttpString) value;
         } else {
-            final String[] strings = (String[]) value;
+            final HttpString[] strings = (HttpString[]) value;
             int idx = head++;
             this.size = (byte) (size - 1);
             final int len = strings.length;
@@ -353,17 +354,17 @@ public final class HeaderValues extends AbstractCollection<String> implements De
         }
     }
 
-    public String pollLast() {
+    public HttpString pollLast() {
         final byte size = this.size;
         if (size == 0) return null;
 
         final Object value = this.value;
-        if (value instanceof String) {
+        if (value instanceof HttpString) {
             this.size = 0;
             this.value = null;
-            return (String) value;
+            return (HttpString) value;
         } else {
-            final String[] strings = (String[]) value;
+            final HttpString[] strings = (HttpString[]) value;
             int idx = head + (this.size = (byte) (size - 1));
             final int len = strings.length;
             if (idx > len) idx -= len;
@@ -375,14 +376,14 @@ public final class HeaderValues extends AbstractCollection<String> implements De
         }
     }
 
-    public String remove(int idx) {
+    public HttpString remove(int idx) {
         final int size = this.size;
         if (idx < 0 || idx >= size) throw new IndexOutOfBoundsException();
         if (idx == 0) return removeFirst();
         if (idx == size - 1) return removeLast();
         assert size > 2; // must be > 2 to pass the last two checks
         // value must be an array since size > 2
-        final String[] value = (String[]) this.value;
+        final HttpString[] value = (HttpString[]) this.value;
         final int len = value.length;
         final byte head = this.head;
         final int headIdx = idx + head;
@@ -413,24 +414,24 @@ public final class HeaderValues extends AbstractCollection<String> implements De
         }
     }
 
-    public String get(int idx) {
+    public HttpString get(int idx) {
         if (idx > size) {
             throw new IndexOutOfBoundsException();
         }
         Object value = this.value;
         assert value != null;
-        if (value instanceof String) {
+        if (value instanceof HttpString) {
             assert size == 1;
-            return (String) value;
+            return (HttpString) value;
         }
-        final String[] a = (String[]) value;
+        final HttpString[] a = (HttpString[]) value;
         return a[index(idx)];
     }
 
     public int indexOf(final Object o) {
         if (o == null || size == 0) return -1;
-        if (value instanceof String[]) {
-            final String[] list = (String[]) value;
+        if (value instanceof HttpString[]) {
+            final HttpString[] list = (HttpString[]) value;
             final int len = list.length;
             int idx;
             for (int i = 0; i < size; i ++) {
@@ -447,8 +448,8 @@ public final class HeaderValues extends AbstractCollection<String> implements De
 
     public int lastIndexOf(final Object o) {
         if (o == null || size == 0) return -1;
-        if (value instanceof String[]) {
-            final String[] list = (String[]) value;
+        if (value instanceof HttpString[]) {
+            final HttpString[] list = (HttpString[]) value;
             final int len = list.length;
             int idx;
             for (int i = size - 1; i >= 0; i --) {
@@ -463,19 +464,19 @@ public final class HeaderValues extends AbstractCollection<String> implements De
         return -1;
     }
 
-    public String set(final int index, final String element) {
+    public HttpString set(final int index, final HttpString element) {
         if (element == null) throw new IllegalArgumentException();
 
         final byte size = this.size;
         if (index < 0 || index >= size) throw new IndexOutOfBoundsException();
 
         final Object value = this.value;
-        if (size == 1 && value instanceof String) try {
-            return (String) value;
+        if (size == 1 && value instanceof HttpString) try {
+            return (HttpString) value;
         } finally {
             this.value = element;
         } else {
-            final String[] list = (String[]) value;
+            final HttpString[] list = (HttpString[]) value;
             final int i = index(index);
             try {
                 return list[i];
@@ -485,39 +486,39 @@ public final class HeaderValues extends AbstractCollection<String> implements De
         }
     }
 
-    public boolean addAll(int index, final Collection<? extends String> c) {
+    public boolean addAll(int index, final Collection<? extends HttpString> c) {
         final int size = this.size;
         if (index < 0 || index > size) throw new IndexOutOfBoundsException();
-        final Iterator<? extends String> iterator = c.iterator();
+        final Iterator<? extends HttpString> iterator = c.iterator();
         boolean result = false;
         while (iterator.hasNext()) { result |= offer(index, iterator.next()); }
         return result;
     }
 
-    public List<String> subList(final int fromIndex, final int toIndex) {
+    public List<HttpString> subList(final int fromIndex, final int toIndex) {
         // todo - this is about 75% correct, by spec...
         if (fromIndex < 0 || toIndex > size || fromIndex > toIndex) throw new IndexOutOfBoundsException();
         final int len = toIndex - fromIndex;
-        final String[] strings = new String[len];
+        final HttpString[] strings = new HttpString[len];
         for (int i = 0; i < len; i ++) {
             strings[i] = get(i + fromIndex);
         }
         return Arrays.asList(strings);
     }
 
-    public String[] toArray() {
+    public HttpString[] toArray() {
         int size = this.size;
         if (size == 0) { return NO_STRINGS; }
         final Object v = this.value;
-        if (v instanceof String) return new String[] { (String) v };
-        final String[] list = (String[]) v;
+        if (v instanceof HttpString) return new HttpString[] { (HttpString) v };
+        final HttpString[] list = (HttpString[]) v;
         final int head = this.head;
         final int len = list.length;
         final int copyEnd = head + size;
         if (copyEnd < len) {
             return Arrays.copyOfRange(list, head, copyEnd);
         } else {
-            String[] ret = Arrays.copyOfRange(list, head, copyEnd);
+            HttpString[] ret = Arrays.copyOfRange(list, head, copyEnd);
             System.arraycopy(list, 0, ret, len - head, copyEnd - len);
             return ret;
         }
@@ -529,10 +530,10 @@ public final class HeaderValues extends AbstractCollection<String> implements De
         final int inLen = a.length;
         final Object[] target = inLen < size ? Arrays.copyOfRange(a, inLen, inLen + size) : a;
         final Object v = this.value;
-        if (v instanceof String) {
+        if (v instanceof HttpString) {
             target[0] = (T)v;
         } else {
-            final String[] list = (String[]) v;
+            final HttpString[] list = (HttpString[]) v;
             final int head = this.head;
             final int len = list.length;
             final int copyEnd = head + size;
@@ -553,17 +554,17 @@ public final class HeaderValues extends AbstractCollection<String> implements De
     //
     //======================================
 
-    public void addFirst(final String s) {
+    public void addFirst(final HttpString s) {
         if (s == null) return;
         if (! offerFirst(s)) throw new IllegalStateException();
     }
 
-    public void addLast(final String s) {
+    public void addLast(final HttpString s) {
         if (s == null) return;
         if (! offerLast(s)) throw new IllegalStateException();
     }
 
-    public void add(final int index, final String s) {
+    public void add(final int index, final HttpString s) {
         if (s == null) return;
         if (! offer(index, s)) throw new IllegalStateException();
     }
@@ -572,11 +573,11 @@ public final class HeaderValues extends AbstractCollection<String> implements De
         return indexOf(o) != -1;
     }
 
-    public String peekFirst() {
+    public HttpString peekFirst() {
         return size == 0 ? null : get(0);
     }
 
-    public String peekLast() {
+    public HttpString peekLast() {
         return size == 0 ? null : get(size - 1);
     }
 
@@ -590,68 +591,68 @@ public final class HeaderValues extends AbstractCollection<String> implements De
         return i != -1 && remove(i) != null;
     }
 
-    public boolean add(final String s) {
+    public boolean add(final HttpString s) {
         addLast(s);
         return true;
     }
 
-    public void push(final String s) {
+    public void push(final HttpString s) {
         addFirst(s);
     }
 
-    public String pop() {
+    public HttpString pop() {
         return removeFirst();
     }
 
-    public boolean offer(final String s) {
+    public boolean offer(final HttpString s) {
         return offerLast(s);
     }
 
-    public String poll() {
+    public HttpString poll() {
         return pollFirst();
     }
 
-    public String peek() {
+    public HttpString peek() {
         return peekFirst();
     }
 
-    public String remove() {
+    public HttpString remove() {
         return removeFirst();
     }
 
-    public String removeFirst() {
-        final String s = pollFirst();
+    public HttpString removeFirst() {
+        final HttpString s = pollFirst();
         if (s == null) {
             throw new NoSuchElementException();
         }
         return s;
     }
 
-    public String removeLast() {
-        final String s = pollLast();
+    public HttpString removeLast() {
+        final HttpString s = pollLast();
         if (s == null) {
             throw new NoSuchElementException();
         }
         return s;
     }
 
-    public String getFirst() {
-        final String s = peekFirst();
+    public HttpString getFirst() {
+        final HttpString s = peekFirst();
         if (s == null) {
             throw new NoSuchElementException();
         }
         return s;
     }
 
-    public String getLast() {
-        final String s = peekLast();
+    public HttpString getLast() {
+        final HttpString s = peekLast();
         if (s == null) {
             throw new NoSuchElementException();
         }
         return s;
     }
 
-    public String element() {
+    public HttpString element() {
         return getFirst();
     }
 
@@ -659,7 +660,207 @@ public final class HeaderValues extends AbstractCollection<String> implements De
         return removeFirstOccurrence(obj);
     }
 
-    public boolean addAll(final Collection<? extends String> c) {
+    public boolean addAll(final Collection<? extends HttpString> c) {
         return addAll(0, c);
+    }
+
+    /**
+     * Get this value collection as a collection of strings.
+     *
+     * @return the mapped collection
+     */
+    public AsStrings asStrings() {
+        AsStrings asStrings = this.asStrings;
+        if (asStrings == null) {
+            asStrings = this.asStrings = new AsStrings();
+        }
+        return asStrings;
+    }
+
+    private static String stringOf(Object obj) {
+        return obj == null ? null : obj.toString();
+    }
+
+    class StringIterator implements ListIterator<String> {
+        private final ListIterator<HttpString> delegate;
+
+        StringIterator(final ListIterator<HttpString> delegate) {
+            this.delegate = delegate;
+        }
+
+        public boolean hasNext() {
+            return delegate.hasNext();
+        }
+
+        public String next() {
+            return delegate.next().toString();
+        }
+
+        public boolean hasPrevious() {
+            return delegate.hasPrevious();
+        }
+
+        public String previous() {
+            return delegate.previous().toString();
+        }
+
+        public int nextIndex() {
+            return delegate.nextIndex();
+        }
+
+        public int previousIndex() {
+            return delegate.previousIndex();
+        }
+
+        public void remove() {
+            delegate.remove();
+        }
+
+        public void set(final String s) {
+            delegate.set(new HttpString(s));
+        }
+
+        public void add(final String s) {
+            delegate.add(new HttpString(s));
+        }
+    }
+
+    public class AsStrings extends AbstractCollection<String> implements Deque<String>, List<String>, RandomAccess {
+
+        public Iterator<String> iterator() {
+            return new StringIterator(HeaderValues.this.iterator(0, true));
+        }
+
+        public int size() {
+            return HeaderValues.this.size();
+        }
+
+        public void addFirst(final String s) {
+            HeaderValues.this.addFirst(new HttpString(s));
+        }
+
+        public void addLast(final String s) {
+            HeaderValues.this.addLast(new HttpString(s));
+        }
+
+        public boolean offerFirst(final String s) {
+            return HeaderValues.this.offerFirst(new HttpString(s));
+        }
+
+        public boolean offerLast(final String s) {
+            return HeaderValues.this.offerLast(new HttpString(s));
+        }
+
+        public String removeFirst() {
+            return stringOf(HeaderValues.this.removeFirst());
+        }
+
+        public String removeLast() {
+            return stringOf(HeaderValues.this.removeLast());
+        }
+
+        public String pollFirst() {
+            return stringOf(HeaderValues.this.pollFirst());
+        }
+
+        public String pollLast() {
+            return stringOf(HeaderValues.this.pollLast());
+        }
+
+        public String getFirst() {
+            return stringOf(HeaderValues.this.getFirst());
+        }
+
+        public String getLast() {
+            return stringOf(HeaderValues.this.getLast());
+        }
+
+        public String peekFirst() {
+            return stringOf(HeaderValues.this.peekFirst());
+        }
+
+        public String peekLast() {
+            return stringOf(HeaderValues.this.peekLast());
+        }
+
+        public boolean removeFirstOccurrence(final Object o) {
+            return HeaderValues.this.removeFirstOccurrence(o == null ? null : new HttpString(o.toString()));
+        }
+
+        public boolean removeLastOccurrence(final Object o) {
+            return HeaderValues.this.removeLastOccurrence(o == null ? null : new HttpString(o.toString()));
+        }
+
+        public boolean offer(final String s) {
+            return HeaderValues.this.offer(new HttpString(s));
+        }
+
+        public String remove() {
+            return stringOf(HeaderValues.this.remove());
+        }
+
+        public String poll() {
+            return stringOf(HeaderValues.this.poll());
+        }
+
+        public String element() {
+            return stringOf(HeaderValues.this.element());
+        }
+
+        public String peek() {
+            return stringOf(HeaderValues.this.peek());
+        }
+
+        public void push(final String s) {
+            HeaderValues.this.push(new HttpString(s));
+        }
+
+        public String pop() {
+            return stringOf(HeaderValues.this.pop());
+        }
+
+        public Iterator<String> descendingIterator() {
+            return new StringIterator(HeaderValues.this.iterator(0, false));
+        }
+
+        public boolean addAll(final int index, final Collection<? extends String> c) {
+            return false;
+        }
+
+        public String get(final int index) {
+            return stringOf(HeaderValues.this.get(index));
+        }
+
+        public String set(final int index, final String element) {
+            return stringOf(HeaderValues.this.set(index, new HttpString(element)));
+        }
+
+        public void add(final int index, final String element) {
+            HeaderValues.this.add(index, new HttpString(element));
+        }
+
+        public String remove(final int index) {
+            return stringOf(HeaderValues.this.remove(index));
+        }
+
+        public int indexOf(final Object o) {
+            return HeaderValues.this.indexOf(new HttpString(stringOf(o)));
+        }
+
+        public int lastIndexOf(final Object o) {
+            return HeaderValues.this.lastIndexOf(new HttpString(stringOf(o)));
+        }
+
+        public ListIterator<String> listIterator() {
+            return new StringIterator(HeaderValues.this.iterator(0, true));
+        }
+
+        public ListIterator<String> listIterator(final int index) {
+            return new StringIterator(HeaderValues.this.iterator(index, true));
+        }
+
+        public List<String> subList(final int fromIndex, final int toIndex) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

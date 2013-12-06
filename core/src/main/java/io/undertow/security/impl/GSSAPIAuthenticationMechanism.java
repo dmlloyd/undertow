@@ -23,8 +23,9 @@ import java.security.GeneralSecurityException;
 import java.security.Principal;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.util.List;
 
+import io.undertow.util.HeaderValues;
+import io.undertow.util.HttpString;
 import javax.security.auth.Subject;
 import javax.security.auth.kerberos.KerberosPrincipal;
 
@@ -109,13 +110,13 @@ public class GSSAPIAuthenticationMechanism implements AuthenticationMechanism {
             }
         }
 
-        List<String> authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
+        HeaderValues authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
         if (authHeaders != null) {
-            for (String current : authHeaders) {
-                if (current.startsWith(NEGOTIATE_PREFIX)) {
-                    String base64Challenge = current.substring(NEGOTIATE_PREFIX.length());
+            for (HttpString current : authHeaders) {
+                if (current.toString().startsWith(NEGOTIATE_PREFIX)) {
+                    HttpString base64Challenge = current.substring(NEGOTIATE_PREFIX.length());
                     try {
-                        ByteBuffer challenge = FlexBase64.decode(base64Challenge);
+                        ByteBuffer challenge = FlexBase64.decode(base64Challenge.toString());
                         return runGSSAPI(exchange, challenge, securityContext);
                     } catch (IOException e) {
                     }
@@ -144,7 +145,7 @@ public class GSSAPIAuthenticationMechanism implements AuthenticationMechanism {
             }
         }
 
-        exchange.getResponseHeaders().add(WWW_AUTHENTICATE, header);
+        exchange.getResponseHeaders().add(WWW_AUTHENTICATE, new HttpString(header));
 
         return new ChallengeResult(true, UNAUTHORIZED);
     }
@@ -166,12 +167,13 @@ public class GSSAPIAuthenticationMechanism implements AuthenticationMechanism {
     }
 
     private String getHostName(final HttpServerExchange exchange) {
-        String hostName = exchange.getRequestHeaders().getFirst(HOST);
+        HttpString hostName = exchange.getRequestHeaders().getFirst(HOST);
         if (hostName != null) {
-            if (hostName.contains(":")) {
-                hostName = hostName.substring(0, hostName.indexOf(":"));
+            final int i = hostName.indexOf(':');
+            if (i != -1) {
+                hostName = hostName.substring(0, i);
             }
-            return hostName;
+            return hostName.toString();
         }
 
         return null;
@@ -216,7 +218,7 @@ public class GSSAPIAuthenticationMechanism implements AuthenticationMechanism {
                 if (respToken != null) {
                     // There will be no further challenge but we do have a token so set it here.
                     exchange.getResponseHeaders().add(WWW_AUTHENTICATE,
-                            NEGOTIATE_PREFIX + FlexBase64.encodeString(respToken, false));
+                            new HttpString(NEGOTIATE_PREFIX + FlexBase64.encodeString(respToken, false)));
                 }
                 IdentityManager identityManager = securityContext.getIdentityManager();
                 final Account account = identityManager.verify(new GSSContextCredential(negContext.getGssContext()));

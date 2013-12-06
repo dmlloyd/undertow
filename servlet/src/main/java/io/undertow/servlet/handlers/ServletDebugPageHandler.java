@@ -3,6 +3,7 @@ package io.undertow.servlet.handlers;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.servlet.spec.HttpServletRequestImpl;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 
 import java.io.IOException;
 
@@ -84,7 +85,7 @@ public class ServletDebugPageHandler {
             sb.append("<br/>");
         }
         sb.append("</body></html>");
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/html; charset=UTF-8");
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, new HttpString("text/html; charset=UTF-8"));
         exchange.getResponseSender().send(sb.toString());
     }
 

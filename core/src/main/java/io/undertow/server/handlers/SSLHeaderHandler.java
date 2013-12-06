@@ -9,6 +9,7 @@ import io.undertow.server.SSLSessionInfo;
 import io.undertow.util.Certificates;
 import io.undertow.util.HeaderMap;
 
+import io.undertow.util.HttpString;
 import javax.security.cert.CertificateException;
 
 import static io.undertow.util.Headers.SSL_CIPHER;
@@ -55,23 +56,23 @@ public class SSLHeaderHandler implements HttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         HeaderMap requestHeaders = exchange.getRequestHeaders();
-        final String sessionId = requestHeaders.getFirst(SSL_SESSION_ID);
+        final HttpString sessionId = requestHeaders.getFirst(SSL_SESSION_ID);
         if (sessionId != null) {
-            final String cipher = requestHeaders.getFirst(SSL_CIPHER);
-            String clientCert = requestHeaders.getFirst(SSL_CLIENT_CERT);
+            final HttpString cipher = requestHeaders.getFirst(SSL_CIPHER);
+            HttpString clientCert = requestHeaders.getFirst(SSL_CLIENT_CERT);
             //the proxy client replaces \n with ' '
             if (clientCert != null && clientCert.length() > 28) {
                 StringBuilder sb = new StringBuilder(clientCert.length() + 1);
                 sb.append(Certificates.BEGIN_CERT);
                 sb.append('\n');
-                sb.append(clientCert.replace(' ', '\n').substring(28, clientCert.length() - 26));//core certificate data
+                sb.append(clientCert.toString().replace(' ', '\n').substring(28, clientCert.length() - 26));//core certificate data
                 sb.append('\n');
                 sb.append(Certificates.END_CERT);
-                clientCert = sb.toString();
+                clientCert = new HttpString(sb.toString());
             }
 
             try {
-                SSLSessionInfo info = new BasicSSLSessionInfo(sessionId, cipher, clientCert);
+                SSLSessionInfo info = new BasicSSLSessionInfo(HttpString.toString(sessionId), HttpString.toString(cipher), HttpString.toString(clientCert));
                 exchange.setRequestScheme(HTTPS);
                 exchange.getConnection().setSslSessionInfo(info);
                 exchange.addExchangeCompleteListener(CLEAR_SSL_LISTENER);

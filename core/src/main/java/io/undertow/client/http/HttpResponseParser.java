@@ -270,7 +270,8 @@ abstract class HttpResponseParser {
                         String headerValue = stringBuilder.toString();
 
                         //TODO: we need to decode this according to RFC-2047 if we have seen a =? symbol
-                        builder.getResponseHeaders().add(nextStandardHeader, headerValue);
+                        //TODO: optimize this further
+                        builder.getResponseHeaders().add(nextStandardHeader, new HttpString(headerValue));
 
                         state.nextHeader = null;
 

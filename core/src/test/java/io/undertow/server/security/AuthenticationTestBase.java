@@ -297,10 +297,10 @@ public abstract class AuthenticationTestBase {
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {
             HeaderMap responseHeader = exchange.getResponseHeaders();
-            responseHeader.add(PROCESSED_BY, "ResponseHandler");
+            responseHeader.add(PROCESSED_BY, new HttpString("ResponseHandler"));
             String user = getAuthenticatedUser(exchange);
             if (user != null) {
-                responseHeader.add(AUTHENTICATED_USER, user);
+                responseHeader.add(AUTHENTICATED_USER, new HttpString(user));
             }
 
             exchange.endExchange();

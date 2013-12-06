@@ -77,8 +77,8 @@ public class ChunkedResponseTrailersTestCase {
                     }
                     HeaderMap trailers = new HeaderMap();
                     exchange.putAttachment(ChunkedStreamSinkConduit.TRAILERS, trailers);
-                    trailers.put(HttpString.tryFromString("foo"), "fooVal");
-                    trailers.put(HttpString.tryFromString("bar"), "barVal");
+                    trailers.put(HttpString.tryFromString("foo"), new HttpString("fooVal"));
+                    trailers.put(HttpString.tryFromString("bar"), new HttpString("barVal"));
                     new StringWriteChannelListener(message).setup(exchange.getResponseChannel());
 
                 } catch (IOException e) {

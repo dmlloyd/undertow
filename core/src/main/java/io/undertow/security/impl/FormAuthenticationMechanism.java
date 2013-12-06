@@ -34,6 +34,7 @@ import io.undertow.server.handlers.form.FormData;
 import io.undertow.server.handlers.form.FormDataParser;
 import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 
 import static io.undertow.UndertowMessages.MESSAGES;
@@ -174,6 +175,6 @@ public class FormAuthenticationMechanism implements AuthenticationMechanism {
     static void sendRedirect(final HttpServerExchange exchange, final String location) {
         // TODO - String concatenation to construct URLS is extremely error prone - switch to a URI which will better handle this.
         String loc = exchange.getRequestScheme() + "://" + exchange.getHostAndPort() + location;
-        exchange.getResponseHeaders().put(Headers.LOCATION, loc);
+        exchange.getResponseHeaders().put(Headers.LOCATION, new HttpString(loc));
     }
 }

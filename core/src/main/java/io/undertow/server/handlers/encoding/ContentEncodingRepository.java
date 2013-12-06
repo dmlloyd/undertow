@@ -4,6 +4,7 @@ import io.undertow.predicate.Predicate;
 import io.undertow.predicate.Predicates;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.CopyOnWriteMap;
+import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.QValueParser;
 
@@ -29,7 +30,7 @@ public class ContentEncodingRepository {
      * @return
      */
     public AllowedContentEncodings getContentEncodings(final HttpServerExchange exchange) {
-        final List<String> res = exchange.getRequestHeaders().get(Headers.ACCEPT_ENCODING);
+        final HeaderValues res = exchange.getRequestHeaders().get(Headers.ACCEPT_ENCODING);
         if (res == null || res.isEmpty()) {
             return null;
         }
@@ -42,11 +43,11 @@ public class ContentEncodingRepository {
 
             for (final QValueParser.QValueResult value : result) {
                 EncodingMapping encoding;
-                if (value.getValue().equals("*")) {
+                if (value.getValue().equalToString("*")) {
                     includesIdentity = true;
                     encoding = new EncodingMapping(IDENTITY, ContentEncodingProvider.IDENTITY, 0, Predicates.truePredicate());
                 } else {
-                    encoding = encodingMap.get(value.getValue());
+                    encoding = encodingMap.get(value.getValue().toString());
                 }
                 if (value.isQValueZero()) {
                     isQValue0 = true;

@@ -141,6 +141,13 @@ final class AjpServerResponseConduit extends AbstractFramedStreamSinkConduit {
         buf.put((byte) 0);
     }
 
+    private void putString(final ByteBuffer buf, HttpString value) {
+        final int length = value.length();
+        putInt(buf, length);
+        value.appendTo(buf);
+        buf.put((byte) 0);
+    }
+
     /**
      * Handles generating the header if required, and adding it to the frame queue.
      *
@@ -163,7 +170,7 @@ final class AjpServerResponseConduit extends AbstractFramedStreamSinkConduit {
             buffer.put((byte) 0);
             buffer.put((byte) 4);
             putInt(buffer, exchange.getResponseCode());
-            putString(buffer, StatusCodes.getReason(exchange.getResponseCode()));
+            StatusCodes.getReason(exchange.getResponseCode()).appendTo(buffer);
 
             int headers = 0;
             //we need to count the headers
@@ -176,7 +183,7 @@ final class AjpServerResponseConduit extends AbstractFramedStreamSinkConduit {
 
 
             for (final HttpString header : responseHeaders.getHeaderNames()) {
-                for (String headerValue : responseHeaders.get(header)) {
+                for (HttpString headerValue : responseHeaders.get(header)) {
                     if(buffer.remaining() < header.length() + headerValue.length() + 6) {
                         //if there is not enough room in the buffer we need to allocate more
                         buffer.flip();
@@ -197,7 +204,7 @@ final class AjpServerResponseConduit extends AbstractFramedStreamSinkConduit {
                     if (headerCode != null) {
                         putInt(buffer, headerCode);
                     } else {
-                        putString(buffer, header.toString());
+                        putString(buffer, header);
                     }
                     putString(buffer, headerValue);
                 }

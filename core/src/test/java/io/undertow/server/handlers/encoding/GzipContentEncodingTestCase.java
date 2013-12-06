@@ -7,6 +7,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.testutils.DefaultServer;
 import io.undertow.testutils.HttpClientUtils;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -34,7 +35,7 @@ public class GzipContentEncodingTestCase {
                 .setNext(new HttpHandler() {
                     @Override
                     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-                        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, message.length() + "");
+                        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, new HttpString(message.length() + ""));
                         exchange.getResponseSender().send(message, IoCallback.END_EXCHANGE);
                     }
                 });

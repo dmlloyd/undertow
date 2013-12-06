@@ -82,6 +82,8 @@ import java.util.concurrent.TimeUnit;
 public final class ProxyHandler implements HttpHandler {
 
     public static final String UTF_8 = "UTF-8";
+    private static final HttpString LOCALHOST = new HttpString("localhost");
+    private static final HttpString KEEP_ALIVE = new HttpString("keep-alive");
     private final ProxyClient proxyClient;
     private final int maxRequestTime;
 
@@ -289,14 +291,14 @@ public final class ProxyHandler implements HttpHandler {
                 if (headerValue == null || headerValue.isEmpty()) {
                     outboundRequestHeaders.remove(entry.getKey());
                 } else {
-                    outboundRequestHeaders.put(entry.getKey(), headerValue.replace('\n', ' '));
+                    outboundRequestHeaders.put(entry.getKey(), new HttpString(headerValue.replace('\n', ' ')));
                 }
             }
             SocketAddress address = exchange.getConnection().getPeerAddress();
             if (address instanceof InetSocketAddress) {
-                outboundRequestHeaders.put(Headers.X_FORWARDED_FOR, ((InetSocketAddress) address).getHostString());
+                outboundRequestHeaders.put(Headers.X_FORWARDED_FOR, new HttpString(((InetSocketAddress) address).getHostString()));
             } else {
-                outboundRequestHeaders.put(Headers.X_FORWARDED_FOR, "localhost");
+                outboundRequestHeaders.put(Headers.X_FORWARDED_FOR, LOCALHOST);
             }
 
             if(exchange.getRequestScheme().equals("https")) {
@@ -387,7 +389,7 @@ public final class ProxyHandler implements HttpHandler {
             if (exchange.isPersistent() && !result.getConnection().isOpen()) {
                 //just because the client side is non-persistent it does not mean we want to close the connection to
                 //the backend
-                outboundResponseHeaders.put(Headers.CONNECTION, "keep-alive");
+                outboundResponseHeaders.put(Headers.CONNECTION, KEEP_ALIVE);
             }
 
             if (exchange.isUpgrade()) {

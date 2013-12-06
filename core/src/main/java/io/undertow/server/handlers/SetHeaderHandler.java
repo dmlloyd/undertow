@@ -28,18 +28,29 @@ import io.undertow.util.HttpString;
 public class SetHeaderHandler implements HttpHandler {
 
     private final HttpString header;
-    private final String value;
+    private final HttpString value;
 
     private volatile HttpHandler next = ResponseCodeHandler.HANDLE_404;
 
+    public SetHeaderHandler(final HttpString header, final HttpString value) {
+        this.header = header;
+        this.value = value;
+    }
+
+    public SetHeaderHandler(final HttpHandler next, final HttpString header, final HttpString value) {
+        this.next = next;
+        this.header = header;
+        this.value = value;
+    }
+
     public SetHeaderHandler(final String header, final String value) {
         this.header = new HttpString(header);
-        this.value = value;
+        this.value = new HttpString(value);
     }
 
     public SetHeaderHandler(final HttpHandler next, final String header, final String value) {
         this.next = next;
-        this.value = value;
+        this.value = new HttpString(value);
         this.header = new HttpString(header);
     }
 

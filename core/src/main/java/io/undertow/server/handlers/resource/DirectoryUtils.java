@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import io.undertow.UndertowLogger;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import io.undertow.util.RedirectBuilder;
 import org.xnio.channels.Channels;
@@ -17,6 +18,10 @@ import org.xnio.channels.Channels;
  */
 public class DirectoryUtils {
 
+    private static final HttpString APPLICATION_JAVASCRIPT = new HttpString("application/javascript");
+    private static final HttpString TEXT_CSS = new HttpString("text/css");
+    private static final HttpString TEXT_HTML = new HttpString("text/html");
+
     /**
      * Serve static resource for the directory listing
      *
@@ -25,17 +30,17 @@ public class DirectoryUtils {
      */
     public static boolean sendRequestedBlobs(HttpServerExchange exchange) {
         ByteBuffer buffer = null;
-        String type = null;
+        HttpString type = null;
         if ("css".equals(exchange.getQueryString())) {
             buffer = Blobs.FILE_CSS_BUFFER.duplicate();
-            type = "text/css";
+            type = TEXT_CSS;
         } else if ("js".equals(exchange.getQueryString())) {
             buffer = Blobs.FILE_JS_BUFFER.duplicate();
-            type = "application/javascript";
+            type = APPLICATION_JAVASCRIPT;
         }
 
         if (buffer != null) {
-            exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, String.valueOf(buffer.limit()));
+            exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, buffer.limit());
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, type);
             if (Methods.HEAD.equalsIgnoreCase(exchange.getRequestMethod())) {
                 exchange.endExchange();
@@ -53,7 +58,7 @@ public class DirectoryUtils {
         String requestPath = exchange.getRequestPath();
         if (! requestPath.endsWith("/")) {
             exchange.setResponseCode(302);
-            exchange.getResponseHeaders().put(Headers.LOCATION, RedirectBuilder.redirect(exchange, exchange.getRelativePath() + "/", true));
+            exchange.getResponseHeaders().put(Headers.LOCATION, new HttpString(RedirectBuilder.redirect(exchange, exchange.getRelativePath() + "/", true)));
             exchange.endExchange();
             return;
         }
@@ -115,8 +120,8 @@ public class DirectoryUtils {
 
         try {
             ByteBuffer output = ByteBuffer.wrap(builder.toString().getBytes("UTF-8"));
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/html");
-            exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, String.valueOf(output.limit()));
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, TEXT_HTML);
+            exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, output.limit());
             Channels.writeBlocking(exchange.getResponseChannel(), output);
         } catch (UnsupportedEncodingException e) {
             throw new IllegalStateException(e);

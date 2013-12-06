@@ -7,6 +7,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.ConduitFactory;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import org.xnio.conduits.StreamSinkConduit;
 
@@ -73,7 +74,7 @@ public class AllowedContentEncodings implements ConduitWrapper<StreamSinkConduit
                 && exchange.getResponseCode() != 304) {
             EncodingMapping encoding = getEncoding();
             if (encoding != null) {
-                exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, encoding.getName());
+                exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, new HttpString(encoding.getName()));
                 if (exchange.getRequestMethod().equalsIgnoreCase(Methods.HEAD)) {
                     //we don't create an actual encoder for HEAD requests, but we set the header
                     return factory.create();

@@ -37,8 +37,10 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
+import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.HexConverter;
+import io.undertow.util.HttpString;
 
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
@@ -132,11 +134,11 @@ public class DigestAuthenticationMechanism implements AuthenticationMechanism {
 
     public AuthenticationMechanismOutcome authenticate(final HttpServerExchange exchange,
                                                        final SecurityContext securityContext) {
-        List<String> authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
+        HeaderValues authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
         if (authHeaders != null) {
-            for (String current : authHeaders) {
-                if (current.startsWith(DIGEST_PREFIX)) {
-                    String digestChallenge = current.substring(PREFIX_LENGTH);
+            for (HttpString current : authHeaders) {
+                if (current.toString().startsWith(DIGEST_PREFIX)) {
+                    String digestChallenge = current.toString().substring(PREFIX_LENGTH);
 
                     try {
                         DigestContext context = new DigestContext();
@@ -427,10 +429,10 @@ public class DigestAuthenticationMechanism implements AuthenticationMechanism {
         HeaderMap responseHeader = exchange.getResponseHeaders();
         if (supportedAlgorithms.size() > 0) {
             for (DigestAlgorithm current : supportedAlgorithms) {
-                responseHeader.add(WWW_AUTHENTICATE, String.format(theChallenge, current.getToken()));
+                responseHeader.add(WWW_AUTHENTICATE, new HttpString(String.format(theChallenge, current.getToken())));
             }
         } else {
-            responseHeader.add(WWW_AUTHENTICATE, theChallenge);
+            responseHeader.add(WWW_AUTHENTICATE, new HttpString(theChallenge));
         }
 
         return new ChallengeResult(true, UNAUTHORIZED);
@@ -462,7 +464,7 @@ public class DigestAuthenticationMechanism implements AuthenticationMechanism {
             }
 
             HeaderMap responseHeader = exchange.getResponseHeaders();
-            responseHeader.add(AUTHENTICATION_INFO, sb.toString());
+            responseHeader.add(AUTHENTICATION_INFO, new HttpString(sb.toString()));
         }
 
         exchange.removeAttachment(DigestContext.ATTACHMENT_KEY);

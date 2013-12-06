@@ -44,38 +44,37 @@ public final class HeaderValuesTestCase {
     @Test
     public void testAdd() {
         HeaderValues headerValues = new HeaderValues(Headers.HOST);
-        assertTrue(headerValues.add("Foo"));
-        assertTrue(headerValues.contains("Foo"));
-        assertTrue(headerValues.contains(new String("Foo")));
-        assertFalse(headerValues.contains("Bar"));
+        assertTrue(headerValues.add(new HttpString("Foo")));
+        assertTrue(headerValues.contains(new HttpString("Foo")));
+        assertFalse(headerValues.contains(new HttpString("Bar")));
         assertFalse(headerValues.isEmpty());
         assertEquals(1, headerValues.size());
-        assertEquals("Foo", headerValues.peek());
-        assertEquals("Foo", headerValues.peekFirst());
-        assertEquals("Foo", headerValues.peekLast());
-        assertEquals("Foo", headerValues.get(0));
+        assertEquals("Foo", headerValues.peek().toString());
+        assertEquals("Foo", headerValues.peekFirst().toString());
+        assertEquals("Foo", headerValues.peekLast().toString());
+        assertEquals("Foo", headerValues.get(0).toString());
 
-        assertTrue(headerValues.offerFirst("First!"));
-        assertTrue(headerValues.contains("First!"));
-        assertTrue(headerValues.contains("Foo"));
+        assertTrue(headerValues.offerFirst(new HttpString("First!")));
+        assertTrue(headerValues.contains(new HttpString("First!")));
+        assertTrue(headerValues.contains(new HttpString("Foo")));
         assertEquals(2, headerValues.size());
-        assertEquals("First!", headerValues.peek());
-        assertEquals("First!", headerValues.peekFirst());
-        assertEquals("First!", headerValues.get(0));
-        assertEquals("Foo", headerValues.peekLast());
-        assertEquals("Foo", headerValues.get(1));
+        assertEquals("First!", headerValues.peek().toString());
+        assertEquals("First!", headerValues.peekFirst().toString());
+        assertEquals("First!", headerValues.get(0).toString());
+        assertEquals("Foo", headerValues.peekLast().toString());
+        assertEquals("Foo", headerValues.get(1).toString());
 
-        assertTrue(headerValues.offerLast("Last!"));
-        assertTrue(headerValues.contains("Last!"));
-        assertTrue(headerValues.contains("Foo"));
-        assertTrue(headerValues.contains("First!"));
+        assertTrue(headerValues.offerLast(new HttpString("Last!")));
+        assertTrue(headerValues.contains(new HttpString("First!")));
+        assertTrue(headerValues.contains(new HttpString("Foo")));
+        assertTrue(headerValues.contains(new HttpString("First!")));
         assertEquals(3, headerValues.size());
-        assertEquals("First!", headerValues.peek());
-        assertEquals("First!", headerValues.peekFirst());
-        assertEquals("First!", headerValues.get(0));
-        assertEquals("Foo", headerValues.get(1));
-        assertEquals("Last!", headerValues.peekLast());
-        assertEquals("Last!", headerValues.get(2));
+        assertEquals("First!", headerValues.peek().toString());
+        assertEquals("First!", headerValues.peekFirst().toString());
+        assertEquals("First!", headerValues.get(0).toString());
+        assertEquals("Foo", headerValues.get(1).toString());
+        assertEquals("Last!", headerValues.peekLast().toString());
+        assertEquals("Last!", headerValues.get(2).toString());
     }
 
 }

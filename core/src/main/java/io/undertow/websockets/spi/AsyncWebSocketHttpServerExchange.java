@@ -52,28 +52,28 @@ public class AsyncWebSocketHttpServerExchange implements WebSocketHttpExchange {
 
     @Override
     public String getRequestHeader(final String headerName) {
-        return exchange.getRequestHeaders().getFirst(HttpString.tryFromString(headerName));
+        return HttpString.toString(exchange.getRequestHeaders().getFirst(HttpString.tryFromString(headerName)));
     }
 
     @Override
     public Map<String, List<String>> getRequestHeaders() {
         Map<String, List<String>> headers = new HashMap<String, List<String>>();
         for (final HttpString header : exchange.getRequestHeaders().getHeaderNames()) {
-            headers.put(header.toString(), new ArrayList<String>(exchange.getRequestHeaders().get(header)));
+            headers.put(header.toString(), new ArrayList<String>(exchange.getRequestHeaders().get(header).asStrings()));
         }
         return Collections.unmodifiableMap(headers);
     }
 
     @Override
     public String getResponseHeader(final String headerName) {
-        return exchange.getResponseHeaders().getFirst(HttpString.tryFromString(headerName));
+        return HttpString.toString(exchange.getResponseHeaders().getFirst(HttpString.tryFromString(headerName)));
     }
 
     @Override
     public Map<String, List<String>> getResponseHeaders() {
         Map<String, List<String>> headers = new HashMap<String, List<String>>();
         for (final HttpString header : exchange.getResponseHeaders().getHeaderNames()) {
-            headers.put(header.toString(), new ArrayList<String>(exchange.getResponseHeaders().get(header)));
+            headers.put(header.toString(), new ArrayList<String>(exchange.getResponseHeaders().get(header).asStrings()));
         }
         return Collections.unmodifiableMap(headers);
     }
@@ -83,13 +83,17 @@ public class AsyncWebSocketHttpServerExchange implements WebSocketHttpExchange {
         HeaderMap map = exchange.getRequestHeaders();
         map.clear();
         for (Map.Entry<String, List<String>> header : headers.entrySet()) {
-            map.addAll(HttpString.tryFromString(header.getKey()), header.getValue());
+            final ArrayList<HttpString> httpStrings = new ArrayList<HttpString>(header.getValue().size());
+            for (String s : header.getValue()) {
+                httpStrings.add(new HttpString(s));
+            }
+            map.addAll(HttpString.tryFromString(header.getKey()), httpStrings);
         }
     }
 
     @Override
     public void setResponseHeader(final String headerName, final String headerValue) {
-        exchange.getResponseHeaders().put(HttpString.tryFromString(headerName), headerValue);
+        exchange.getResponseHeaders().put(HttpString.tryFromString(headerName), new HttpString(headerValue));
     }
 
     @Override

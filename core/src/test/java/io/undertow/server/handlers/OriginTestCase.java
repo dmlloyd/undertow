@@ -51,7 +51,7 @@ public class OriginTestCase {
         TestHttpClient client = new TestHttpClient();
         try {
             final OriginHandler handler = new OriginHandler();
-            handler.addAllowedOrigins("http://www.mysite.com:80", "http://mysite.com:80");
+            handler.addAllowedOriginStrings("http://www.mysite.com:80", "http://mysite.com:80");
             DefaultServer.setRootHandler(handler);
             handler.setNext(ResponseCodeHandler.HANDLE_200);
 

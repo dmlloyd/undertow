@@ -40,7 +40,7 @@ import org.xnio.conduits.StreamSinkConduit;
 import org.xnio.conduits.StreamSourceConduit;
 
 /**
- * Class that is  responsible for HTTP transfer encooding, this could be part of the {@link HttpReadListener},
+ * Class that is  responsible for HTTP transfer encoding, this could be part of the {@link HttpReadListener},
  * but is separated out for clarity.
  * <p/>
  * For more info see http://tools.ietf.org/html/rfc2616#section-4.4
@@ -60,9 +60,9 @@ public class HttpTransferEncoding {
 
     public static void setupRequest(final HttpServerExchange exchange) {
         final HeaderMap requestHeaders = exchange.getRequestHeaders();
-        final String connectionHeader = requestHeaders.getFirst(Headers.CONNECTION);
-        final String transferEncodingHeader = requestHeaders.getLast(Headers.TRANSFER_ENCODING);
-        final String contentLengthHeader = requestHeaders.getFirst(Headers.CONTENT_LENGTH);
+        final HttpString connectionHeader = requestHeaders.getFirst(Headers.CONNECTION);
+        final HttpString transferEncodingHeader = requestHeaders.getLast(Headers.TRANSFER_ENCODING);
+        final HttpString contentLengthHeader = requestHeaders.getFirst(Headers.CONTENT_LENGTH);
 
         final HttpServerConnection connection = (HttpServerConnection) exchange.getConnection();
         ConduitStreamSinkChannel sinkChannel = connection.getChannel().getSinkChannel();
@@ -101,18 +101,18 @@ public class HttpTransferEncoding {
 
     }
 
-    private static boolean handleRequestEncoding(final HttpServerExchange exchange, String transferEncodingHeader, String contentLengthHeader, HttpServerConnection connection, PipeliningBufferingStreamSinkConduit pipeliningBuffer, boolean persistentConnection) {
+    private static boolean handleRequestEncoding(final HttpServerExchange exchange, HttpString transferEncodingHeader, HttpString contentLengthHeader, HttpServerConnection connection, PipeliningBufferingStreamSinkConduit pipeliningBuffer, boolean persistentConnection) {
 
         HttpString transferEncoding = Headers.IDENTITY;
         if (transferEncodingHeader != null) {
-            transferEncoding = new HttpString(transferEncodingHeader);
+            transferEncoding = transferEncodingHeader;
         }
         if (transferEncodingHeader != null && !transferEncoding.equalsIgnoreCase(Headers.IDENTITY)) {
             ConduitStreamSourceChannel sourceChannel = ((HttpServerConnection) exchange.getConnection()).getChannel().getSourceChannel();
             sourceChannel.setConduit(new ChunkedStreamSourceConduit(sourceChannel.getConduit(), exchange, chunkedDrainListener(exchange)));
         } else if (contentLengthHeader != null) {
             final long contentLength;
-            contentLength = Long.parseLong(contentLengthHeader);
+            contentLength = contentLengthHeader.toLong();
             if (contentLength == 0L) {
                 log.trace("No content, starting next request");
                 // no content - immediately start the next request, returning an empty stream for this one
@@ -157,12 +157,12 @@ public class HttpTransferEncoding {
         return persistentConnection;
     }
 
-    private static boolean persistentConnection(HttpServerExchange exchange, String connectionHeader) {
+    private static boolean persistentConnection(HttpServerExchange exchange, HttpString connectionHeader) {
         if (exchange.isHttp11()) {
-            return !(connectionHeader != null && Headers.CLOSE.equalToStringIgnoreCase(connectionHeader));
+            return !(connectionHeader != null && Headers.CLOSE.equalsIgnoreCase(connectionHeader));
         } else if (exchange.isHttp10()) {
             if (connectionHeader != null) {
-                if (Headers.KEEP_ALIVE.equalsIgnoreCase(new HttpString(connectionHeader))) {
+                if (Headers.KEEP_ALIVE.equalsIgnoreCase(connectionHeader)) {
                     return true;
                 }
             }
@@ -228,7 +228,7 @@ public class HttpTransferEncoding {
         if (!exchange.isPersistent()) {
             responseHeaders.put(Headers.CONNECTION, Headers.CLOSE);
         } else if (exchange.isPersistent() && connection != null) {
-            if (HttpString.tryFromString(connection).equals(Headers.CLOSE)) {
+            if (connection.equalsIgnoreCase(Headers.CLOSE)) {
                 exchange.setPersistent(false);
             }
         } else if (exchange.getConnection().getUndertowOptions().get(UndertowOptions.ALWAYS_SET_KEEP_ALIVE, true)) {
@@ -244,9 +244,9 @@ public class HttpTransferEncoding {
         return handleRequestConduit(exchange, headRequest, channel, responseHeaders, terminateResponseListener(exchange));
     }
 
-    private static StreamSinkConduit handleFixedLength(HttpServerExchange exchange, boolean headRequest, StreamSinkConduit channel, HeaderMap responseHeaders, String contentLengthHeader, HttpServerConnection connection) {
+    private static StreamSinkConduit handleFixedLength(HttpServerExchange exchange, boolean headRequest, StreamSinkConduit channel, HeaderMap responseHeaders, HttpString contentLengthHeader, HttpServerConnection connection) {
         try {
-            final long contentLength = Long.parseLong(contentLengthHeader);
+            final long contentLength = contentLengthHeader.toLong();
             if (headRequest) {
                 return channel;
             }
@@ -274,7 +274,9 @@ public class HttpTransferEncoding {
                     }
                     return new ChunkedStreamSinkConduit(channel, exchange.getConnection().getBufferPool(), true, !exchange.isPersistent(), responseHeaders, finishListener, exchange);
                 } else {
-                    if (headRequest) {
+                    exchange.setPersistent(false);
+                    responseHeaders.put(Headers.CONNECTION, Headers.CLOSE);
+                    if(headRequest) {
                         return channel;
                     }
                     return new FinishableStreamSinkConduit(channel, finishListener);
@@ -295,8 +297,7 @@ public class HttpTransferEncoding {
     }
 
     private static StreamSinkConduit handleExplicitTransferEncoding(HttpServerExchange exchange, StreamSinkConduit channel, ConduitListener<StreamSinkConduit> finishListener, HeaderMap responseHeaders, HttpString transferEncodingHeader, boolean headRequest) {
-        HttpString transferEncoding = new HttpString(transferEncodingHeader);
-        if (transferEncoding.equalsIgnoreCase(Headers.CHUNKED)) {
+        if (transferEncodingHeader.equalsIgnoreCase(Headers.CHUNKED)) {
             if (headRequest) {
                 return channel;
             }

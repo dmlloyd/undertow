@@ -2,6 +2,7 @@ package io.undertow.predicate;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 
 /**
  * Predicate that returns true if the Content-Size of a request is below a
@@ -19,10 +20,10 @@ class MinContentSizePredicate implements Predicate {
 
     @Override
     public boolean resolve(final HttpServerExchange value) {
-        final String length = value.getResponseHeaders().getFirst(Headers.CONTENT_LENGTH);
+        final HttpString length = value.getResponseHeaders().getFirst(Headers.CONTENT_LENGTH);
         if(length == null) {
             return false;
         }
-        return Long.parseLong(length) < minSize;
+        return length.toLong() < minSize;
     }
 }

@@ -7,6 +7,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.encoding.AllowedContentEncodings;
 import io.undertow.util.ConduitFactory;
+import io.undertow.util.HttpString;
 import org.xnio.conduits.StreamSinkConduit;
 
 import static io.undertow.util.Headers.CONTENT_LENGTH;
@@ -50,12 +51,12 @@ public class CacheHandler implements HttpHandler {
                         return factory.create();
                     }
                 }
-                String lengthString = exchange.getResponseHeaders().getFirst(CONTENT_LENGTH);
+                HttpString lengthString = exchange.getResponseHeaders().getFirst(CONTENT_LENGTH);
                 if(lengthString == null) {
                     //we don't cache chunked requests
                     return factory.create();
                 }
-                int length = Integer.parseInt(lengthString);
+                int length = lengthString.toInt();
                 final CachedHttpRequest key = new CachedHttpRequest(exchange);
                 final DirectBufferCache.CacheEntry entry = cache.add(key, length);
 

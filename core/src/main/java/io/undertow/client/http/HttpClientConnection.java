@@ -63,7 +63,6 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Locale;
 
 import static io.undertow.client.UndertowClientMessages.MESSAGES;
 import static io.undertow.util.Headers.CLOSE;
@@ -210,23 +209,22 @@ public class HttpClientConnection extends AbstractAttachable implements Closeabl
         }
         final HttpClientExchange httpClientExchange = new HttpClientExchange(clientCallback, request, this);
         if (currentRequest == null) {
-            inititateRequest(httpClientExchange);
+            initiateRequest(httpClientExchange);
         } else {
             pendingQueue.add(httpClientExchange);
         }
     }
 
-    private void inititateRequest(HttpClientExchange httpClientExchange) {
+    private void initiateRequest(HttpClientExchange httpClientExchange) {
         currentRequest = httpClientExchange;
         pendingResponse = new HttpResponseBuilder();
         ClientRequest request = httpClientExchange.getRequest();
 
-        String connectionString = request.getRequestHeaders().getFirst(CONNECTION);
+        HttpString connectionString = request.getRequestHeaders().getFirst(CONNECTION);
         if (connectionString != null) {
-            HttpString connectionHttpString = new HttpString(connectionString);
-            if (connectionHttpString.equalsIgnoreCase(CLOSE)) {
+            if (connectionString.equalsIgnoreCase(CLOSE)) {
                 state |= CLOSE_REQ;
-            } else if(connectionHttpString.equalsIgnoreCase(UPGRADE)) {
+            } else if(connectionString.equalsIgnoreCase(UPGRADE)) {
                 state |= UPGRADE_REQUESTED;
             }
         } else if (request.getProtocol() != Protocols.HTTP_1_1) {
@@ -245,14 +243,14 @@ public class HttpClientConnection extends AbstractAttachable implements Closeabl
         StreamSinkConduit conduit = originalSinkConduit;
         conduit = new HttpRequestConduit(conduit, bufferPool, request);
 
-        String fixedLengthString = request.getRequestHeaders().getFirst(CONTENT_LENGTH);
-        String transferEncodingString = request.getRequestHeaders().getLast(TRANSFER_ENCODING);
+        HttpString fixedLengthString = request.getRequestHeaders().getFirst(CONTENT_LENGTH);
+        HttpString transferEncodingString = request.getRequestHeaders().getLast(TRANSFER_ENCODING);
 
         boolean hasContent = true;
 
         if (fixedLengthString != null) {
             try {
-                long length = Long.parseLong(fixedLengthString);
+                long length = fixedLengthString.toLong();
                 conduit = new ClientFixedLengthStreamSinkConduit(conduit, length, false, false, currentRequest);
                 hasContent = length != 0;
             } catch (NumberFormatException e) {
@@ -260,7 +258,7 @@ public class HttpClientConnection extends AbstractAttachable implements Closeabl
                 return;
             }
         } else if (transferEncodingString != null) {
-            if (!transferEncodingString.toLowerCase(Locale.ENGLISH).contains(Headers.CHUNKED.toString())) {
+            if (!transferEncodingString.contains(Headers.CHUNKED)) {
                 handleError(UndertowClientMessages.MESSAGES.unknownTransferEncoding(transferEncodingString));
                 return;
             }
@@ -364,7 +362,7 @@ public class HttpClientConnection extends AbstractAttachable implements Closeabl
             connection.getSourceChannel().setReadListener(clientReadListener);
             connection.getSourceChannel().resumeReads();
         } else {
-            inititateRequest(next);
+            initiateRequest(next);
         }
     }
 
@@ -457,18 +455,18 @@ public class HttpClientConnection extends AbstractAttachable implements Closeabl
 
                 final ClientResponse response = builder.build();
 
-                String connectionString = response.getResponseHeaders().getFirst(CONNECTION);
+                HttpString connectionString = response.getResponseHeaders().getFirst(CONNECTION);
 
                 //check if an upgrade worked
                 if (anyAreSet(HttpClientConnection.this.state, UPGRADE_REQUESTED)) {
-                    if ((connectionString == null || !UPGRADE.equalToStringIgnoreCase(connectionString)) && !response.getResponseHeaders().contains(UPGRADE)) {
+                    if ((connectionString == null || !UPGRADE.equalsIgnoreCase(connectionString)) && !response.getResponseHeaders().contains(UPGRADE)) {
                         //just unset the upgrade requested flag
                         HttpClientConnection.this.state &= ~UPGRADE_REQUESTED;
                     }
                 }
 
                 if(connectionString != null) {
-                    if (HttpString.tryFromString(connectionString).equalsIgnoreCase(Headers.CLOSE)) {
+                    if (connectionString.equalsIgnoreCase(Headers.CLOSE)) {
                         HttpClientConnection.this.state |= CLOSE_REQ;
                     }
                 }
@@ -498,16 +496,16 @@ public class HttpClientConnection extends AbstractAttachable implements Closeabl
     }
 
     private void prepareResponseChannel(ClientResponse response, ClientExchange exchange) {
-        String encoding = response.getResponseHeaders().getLast(TRANSFER_ENCODING);
-        boolean chunked = encoding != null && Headers.CHUNKED.equalsIgnoreCase(new HttpString(encoding));
-        String length = response.getResponseHeaders().getFirst(CONTENT_LENGTH);
+        HttpString encoding = response.getResponseHeaders().getLast(TRANSFER_ENCODING);
+        boolean chunked = encoding != null && Headers.CHUNKED.equalsIgnoreCase(encoding);
+        HttpString length = response.getResponseHeaders().getFirst(CONTENT_LENGTH);
         if (exchange.getRequest().getMethod().equalsIgnoreCase(Methods.HEAD)) {
             connection.getSourceChannel().setConduit(new FixedLengthStreamSourceConduit(connection.getSourceChannel().getConduit(), 0, responseFinishedListener));
         } else if (chunked) {
             connection.getSourceChannel().setConduit(new ChunkedStreamSourceConduit(connection.getSourceChannel().getConduit(), pushBackStreamSourceConduit, bufferPool, responseFinishedListener, exchange));
         } else if (length != null) {
             try {
-                long contentLength = Long.parseLong(length);
+                long contentLength = length.toLong();
                 connection.getSourceChannel().setConduit(new FixedLengthStreamSourceConduit(connection.getSourceChannel().getConduit(), contentLength, responseFinishedListener));
             } catch (NumberFormatException e) {
                 handleError(new IOException(e));

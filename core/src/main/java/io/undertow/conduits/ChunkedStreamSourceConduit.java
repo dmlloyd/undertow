@@ -437,7 +437,7 @@ public class ChunkedStreamSourceConduit extends AbstractStreamSourceConduit<Stre
                     }
                 } else if (state == STATE_TRAILER_VALUE) {
                     if (b == '\n') {
-                        headerMap.put(httpString, builder.toString().trim());
+                        headerMap.put(httpString, new HttpString(builder.toString().trim()));
                         httpString = null;
                         builder.setLength(0);
                         state = STATE_TRAILER_NAME;

@@ -53,9 +53,9 @@ final class HttpRequestConduit extends AbstractStreamSinkConduit<StreamSinkCondu
     private int state = STATE_START;
 
     private Iterator<HttpString> nameIterator;
-    private String string;
+    private HttpString httpString;
     private HttpString headerName;
-    private Iterator<String> valueIterator;
+    private Iterator<HttpString> valueIterator;
     private int charIndex;
     private Pooled<ByteBuffer> pooledBuffer;
     private final ClientRequest request;
@@ -100,11 +100,12 @@ final class HttpRequestConduit extends AbstractStreamSinkConduit<StreamSinkCondu
         ClientRequest request = this.request;
         ByteBuffer buffer = pooledBuffer.getResource();
         Iterator<HttpString> nameIterator = this.nameIterator;
-        Iterator<String> valueIterator = this.valueIterator;
+        Iterator<HttpString> valueIterator = this.valueIterator;
         int charIndex = this.charIndex;
         int length;
-        String string = this.string;
+        HttpString httpString = this.httpString;
         HttpString headerName = this.headerName;
+        String string;
         int res;
         // BUFFER IS FLIPPED COMING IN
         if (state != STATE_START && buffer.hasRemaining()) {
@@ -128,23 +129,16 @@ final class HttpRequestConduit extends AbstractStreamSinkConduit<StreamSinkCondu
                     log.trace("Starting request");
                     // we assume that our buffer has enough space for the initial request line plus one more CR+LF
                     assert buffer.remaining() >= 0x100;
-                    string = request.getMethod().toString();
-                    length = string.length();
-                    for (charIndex = 0; charIndex < length; charIndex ++) {
-                        buffer.put((byte) string.charAt(charIndex));
-                    }
+                    request.getMethod().appendTo(buffer);
                     buffer.put((byte) ' ');
                     string = request.getPath();
                     length = string.length();
+                    // todo httpstring it
                     for (charIndex = 0; charIndex < length; charIndex ++) {
                         buffer.put((byte) string.charAt(charIndex));
                     }
                     buffer.put((byte) ' ');
-                    string = request.getProtocol().toString();
-                    length = string.length();
-                    for (charIndex = 0; charIndex < length; charIndex ++) {
-                        buffer.put((byte) string.charAt(charIndex));
-                    }
+                    request.getProtocol().appendTo(buffer);
                     buffer.put((byte) '\r').put((byte) '\n');
                     HeaderMap headers = request.getRequestHeaders();
                     nameIterator = headers.getHeaderNames().iterator();
@@ -173,14 +167,14 @@ final class HttpRequestConduit extends AbstractStreamSinkConduit<StreamSinkCondu
                     length = headerName.length();
                     while (charIndex < length) {
                         if (buffer.hasRemaining()) {
-                            buffer.put(headerName.byteAt(charIndex++));
+                            charIndex += headerName.tryAppendTo(charIndex, buffer);
                         } else {
                             log.trace("Buffer flush");
                             buffer.flip();
                             do {
                                 res = next.write(buffer);
                                 if (res == 0) {
-                                    this.string = string;
+                                    this.httpString = httpString;
                                     this.headerName = headerName;
                                     this.charIndex = charIndex;
                                     this.valueIterator = valueIterator;
@@ -201,7 +195,7 @@ final class HttpRequestConduit extends AbstractStreamSinkConduit<StreamSinkCondu
                             res = next.write(buffer);
                             if (res == 0) {
                                 log.trace("Continuation");
-                                this.string = string;
+                                this.httpString = httpString;
                                 this.headerName = headerName;
                                 this.charIndex = charIndex;
                                 this.valueIterator = valueIterator;
@@ -221,7 +215,7 @@ final class HttpRequestConduit extends AbstractStreamSinkConduit<StreamSinkCondu
                             res = next.write(buffer);
                             if (res == 0) {
                                 log.trace("Continuation");
-                                this.string = string;
+                                this.httpString = httpString;
                                 this.headerName = headerName;
                                 this.charIndex = charIndex;
                                 this.valueIterator = valueIterator;
@@ -236,22 +230,22 @@ final class HttpRequestConduit extends AbstractStreamSinkConduit<StreamSinkCondu
                         valueIterator = request.getRequestHeaders().get(headerName).iterator();
                     }
                     assert valueIterator.hasNext();
-                    string = valueIterator.next();
+                    httpString = valueIterator.next();
                     charIndex = 0;
                     // fall thru
                 }
                 case STATE_HDR_VAL: {
-                    log.tracef("Processing header value '%s'", string);
-                    length = string.length();
+                    log.tracef("Processing header value '%s'", httpString);
+                    length = httpString.length();
                     while (charIndex < length) {
                         if (buffer.hasRemaining()) {
-                            buffer.put((byte) string.charAt(charIndex++));
+                            charIndex += httpString.tryAppendTo(charIndex, buffer);
                         } else {
                             buffer.flip();
                             do {
                                 res = next.write(buffer);
                                 if (res == 0) {
-                                    this.string = string;
+                                    this.httpString = httpString;
                                     this.headerName = headerName;
                                     this.charIndex = charIndex;
                                     this.valueIterator = valueIterator;
@@ -321,7 +315,7 @@ final class HttpRequestConduit extends AbstractStreamSinkConduit<StreamSinkCondu
                             buffer.put((byte) 10); // LF
                             this.nameIterator = null;
                             this.valueIterator = null;
-                            this.string = null;
+                            this.httpString = null;
                             buffer.flip();
                             //for performance reasons we use a gather write if there is user data
                             if(userData == null) {
@@ -420,7 +414,7 @@ final class HttpRequestConduit extends AbstractStreamSinkConduit<StreamSinkCondu
                     buffer.put((byte) 10); // LF
                     this.nameIterator = null;
                     this.valueIterator = null;
-                    this.string = null;
+                    this.httpString = null;
                     buffer.flip();
                     //for performance reasons we use a gather write if there is user data
                     if(userData == null) {

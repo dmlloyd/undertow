@@ -187,12 +187,12 @@ public class MultipartParser {
                     subState = 0;
                     partHandler.beginPart(headers);
                     //select the approriate encoding
-                    String encoding = headers.getFirst(Headers.CONTENT_TRANSFER_ENCODING);
+                    HttpString encoding = headers.getFirst(Headers.CONTENT_TRANSFER_ENCODING);
                     if (encoding == null) {
                         encodingHandler = new IdentityEncoding();
-                    } else if (encoding.equalsIgnoreCase("base64")) {
+                    } else if (encoding.equalToStringIgnoreCase("base64")) {
                         encodingHandler = new Base64Encoding(bufferPool);
-                    } else if (encoding.equalsIgnoreCase("quoted-printable")) {
+                    } else if (encoding.equalToStringIgnoreCase("quoted-printable")) {
                         encodingHandler = new QuotedPrintableEncoding(bufferPool);
                     } else {
                         encodingHandler = new IdentityEncoding();
@@ -220,7 +220,7 @@ public class MultipartParser {
                     if (subState != 1) {
                         throw new MalformedMessageException();
                     }
-                    headers.put(new HttpString(currentHeaderName.trim()), currentString.toString().trim());
+                    headers.put(new HttpString(currentHeaderName.trim()), new HttpString(currentString.toString().trim()));
                     state = 1;
                     subState = 0;
                     currentString = null;

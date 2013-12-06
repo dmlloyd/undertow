@@ -676,7 +676,7 @@ public abstract class HttpRequestParser {
                             throw UndertowMessages.MESSAGES.tooManyHeaders(maxHeaders);
                         }
                         //TODO: we need to decode this according to RFC-2047 if we have seen a =? symbol
-                        builder.getRequestHeaders().add(nextStandardHeader, headerValue);
+                        builder.getRequestHeaders().add(nextStandardHeader, new HttpString(headerValue));
 
                         state.nextHeader = null;
 

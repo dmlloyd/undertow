@@ -28,6 +28,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import static java.lang.Integer.signum;
+import static java.lang.Math.abs;
+import static java.lang.Math.min;
 import static java.lang.System.arraycopy;
 import static java.util.Arrays.copyOfRange;
 
@@ -224,6 +226,20 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
     }
 
     /**
+     * Append as many bytes as possible to a byte buffer.
+     *
+     * @param offs the start offset
+     * @param buffer the buffer to append to
+     * @return the number of bytes appended
+     */
+    public int tryAppendTo(final int offs, final ByteBuffer buffer) {
+        final byte[] b = getBytes();
+        final int len = min(buffer.remaining(), b.length - offs);
+        buffer.put(b, offs, len);
+        return len;
+    }
+
+    /**
      * Append to an output stream.
      *
      * @param output the stream to write to
@@ -332,7 +348,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
         final int otherLength = otherBytes.length;
         // shorter strings sort higher
         if (length != otherLength) return signum(length - otherLength);
-        final int len = Math.min(length, otherLength);
+        final int len = min(length, otherLength);
         int res;
         for (int i = 0; i < len; i++) {
             res = signum(bytes[i] - otherBytes[i]);
@@ -347,7 +363,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
         final int otherLength = otherBytes.length;
         // shorter strings sort higher
         if (length != otherLength) return signum(length - otherLength);
-        final int len = Math.min(length, otherLength);
+        final int len = min(length, otherLength);
         int res;
         for (int i = 0; i < len; i++) {
             res = signum(upperCase(bytes[i]) - upperCase(otherBytes[i]));
@@ -524,6 +540,16 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
         return string;
     }
 
+    /**
+     * Get the {@code String} representation of the given {@code HttpString}.
+     *
+     * @param httpString the HTTP string
+     * @return the string or {@code null} if {@code httpString} was {@code null}
+     */
+    public static String toString(HttpString httpString) {
+        return httpString == null ? null : httpString.toString();
+    }
+
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
         ois.defaultReadObject();
     }
@@ -540,6 +566,239 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
             hc = (hc << 4) + hc + upperCase((byte) headerName.charAt(i));
         }
         return hc;
+    }
+
+    /**
+     * Get a substring of this {@code HttpString} starting at {@code offs}.
+     *
+     * @param begin the starting offset
+     * @return the substring
+     */
+    public HttpString substring(int begin) {
+        byte[] bytes = this.bytes;
+        String string = this.string;
+        if (bytes != null) {
+            if (string != null) {
+                return new HttpString(Arrays.copyOfRange(bytes, begin, bytes.length), string.substring(begin));
+            } else {
+                return new HttpString(Arrays.copyOfRange(bytes, begin, bytes.length), null);
+            }
+        } else {
+            return new HttpString(null, string.substring(begin));
+        }
+    }
+
+    /**
+     * Get a substring of this {@code HttpString} starting at {@code offs} going to {@code end} (exclusive).
+     *
+     * @param begin the starting offset
+     * @param end the end position (exclusive)
+     * @return the substring
+     */
+    public HttpString substring(int begin, int end) {
+        byte[] bytes = this.bytes;
+        String string = this.string;
+        if (bytes != null) {
+            if (string != null) {
+                return new HttpString(Arrays.copyOfRange(bytes, begin, end), string.substring(begin, end));
+            } else {
+                if (begin < 0 || end > bytes.length) throw new IndexOutOfBoundsException();
+                return new HttpString(Arrays.copyOfRange(bytes, begin, end), null);
+            }
+        } else {
+            return new HttpString(null, string.substring(begin, end));
+        }
+    }
+
+    /**
+     * Get the unsigned {@code int} value of this string.  If the value is greater than would fit in 32 bits, only
+     * the low 32 bits are returned.  Parsing stops on the first non-digit character.
+     *
+     * @param start the index to start at (must be less than or equal to length)
+     * @return the value
+     */
+    public int toInt(final int start) {
+        final byte[] bytes = this.bytes;
+        int v = 0;
+        if (bytes != null) {
+            final int len = bytes.length;
+            byte b;
+            for (int i = start; i < len; i ++) {
+                b = bytes[i];
+                if (b < '0' || b > '9') {
+                    return v;
+                }
+                v = (v << 3) + (v << 1) + (b - '0');
+            }
+            return v;
+        } else {
+            final String string = this.string;
+            final int len = string.length();
+            char c;
+            for (int i = start; i < len; i ++) {
+                c = string.charAt(i);
+                if (c < '0' || c > '9') {
+                    return v;
+                }
+                v = (v << 3) + (v << 1) + (c - '0');
+            }
+            return v;
+        }
+    }
+
+    /**
+     * Get the unsigned {@code int} value of this string.  If the value is greater than would fit in 32 bits, only
+     * the low 32 bits are returned.  Parsing stops on the first non-digit character.
+     *
+     * @return the value
+     */
+    public int toInt() {
+        return toInt(0);
+    }
+
+    /**
+     * Get the unsigned {@code long} value of this string.  If the value is greater than would fit in 64 bits, only
+     * the low 64 bits are returned.  Parsing stops on the first non-digit character.
+     *
+     * @param start the index to start at (must be less than or equal to length)
+     * @return the value
+     */
+    public long toLong(final int start) {
+        final byte[] bytes = this.bytes;
+        long v = 0;
+        if (bytes != null) {
+            final int len = bytes.length;
+            byte b;
+            for (int i = start; i < len; i ++) {
+                b = bytes[i];
+                if (b < '0' || b > '9') {
+                    return v;
+                }
+                v = (v << 3) + (v << 1) + (b - '0');
+            }
+            return v;
+        } else {
+            final String string = this.string;
+            final int len = string.length();
+            char c;
+            for (int i = start; i < len; i ++) {
+                c = string.charAt(i);
+                if (c < '0' || c > '9') {
+                    return v;
+                }
+                v = (v << 3) + (v << 1) + (c - '0');
+            }
+            return v;
+        }
+    }
+
+    /**
+     * Get the unsigned {@code long} value of this string.  If the value is greater than would fit in 64 bits, only
+     * the low 64 bits are returned.  Parsing stops on the first non-digit character.
+     *
+     * @return the value
+     */
+    public long toLong() {
+        return toLong(0);
+    }
+
+    private static int decimalCount(int val) {
+        assert val >= 0;
+        // afaik no faster way exists to do this
+        if (val < 10) return 1;
+        if (val < 100) return 2;
+        if (val < 1000) return 3;
+        if (val < 10000) return 4;
+        if (val < 100000) return 5;
+        if (val < 1000000) return 6;
+        if (val < 10000000) return 7;
+        if (val < 100000000) return 8;
+        if (val < 1000000000) return 9;
+        return 10;
+    }
+
+    private static int decimalCount(long val) {
+        assert val >= 0;
+        // afaik no faster way exists to do this
+        if (val < 10L) return 1;
+        if (val < 100L) return 2;
+        if (val < 1000L) return 3;
+        if (val < 10000L) return 4;
+        if (val < 100000L) return 5;
+        if (val < 1000000L) return 6;
+        if (val < 10000000L) return 7;
+        if (val < 100000000L) return 8;
+        if (val < 1000000000L) return 9;
+        if (val < 10000000000L) return 10;
+        if (val < 100000000000L) return 11;
+        if (val < 1000000000000L) return 12;
+        if (val < 10000000000000L) return 13;
+        if (val < 100000000000000L) return 14;
+        if (val < 1000000000000000L) return 15;
+        if (val < 10000000000000000L) return 16;
+        if (val < 100000000000000000L) return 17;
+        if (val < 1000000000000000000L) return 18;
+        return 19;
+    }
+
+    private static final HttpString ZERO = new HttpString(new byte[] { '0' }, "0");
+
+    /**
+     * Get a string version of the given value.
+     *
+     * @param val the value
+     * @return the string
+     */
+    public static HttpString fromLong(long val) {
+        if (val == 0) return ZERO;
+        // afaik no faster way exists to do this
+        int i = decimalCount(abs(val));
+        final byte[] b;
+        if (val < 0) {
+            b = new byte[++i];
+            b[0] = '-';
+        } else {
+            b = new byte[i];
+        }
+        long quo;
+        // modulus
+        int mod;
+        do {
+            quo = val / 10;
+            mod = (int) (val - ((quo << 3) + (quo << 1)));
+            b[--i] = (byte) (mod + '0');
+            val = quo;
+        } while (i > 0);
+        return new HttpString(b, null);
+    }
+
+    /**
+     * Get a string version of the given value.
+     *
+     * @param val the value
+     * @return the string
+     */
+    public static HttpString fromInt(int val) {
+        if (val == 0) return ZERO;
+        // afaik no faster way exists to do this
+        int i = decimalCount(abs(val));
+        final byte[] b;
+        if (val < 0) {
+            b = new byte[++i];
+            b[0] = '-';
+        } else {
+            b = new byte[i];
+        }
+        int quo;
+        // modulus
+        int mod;
+        do {
+            quo = val / 10;
+            mod = (int) (val - ((quo << 3) + (quo << 1)));
+            b[--i] = (byte) (mod + '0');
+            val = quo;
+        } while (i > 0);
+        return new HttpString(b, null);
     }
 
     /**
@@ -596,5 +855,87 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
             }
         }
         return true;
+    }
+
+    /**
+     * Get the index of the given character in this string.
+     *
+     * @param c the character
+     * @return the index, or -1 if it was not found
+     */
+    public int indexOf(final char c) {
+        if (c > 255) {
+            return -1;
+        }
+        final byte[] bytes = this.bytes;
+        if (bytes == null) {
+            return string.indexOf(c);
+        }
+        final byte bc = (byte) c;
+        for (int i = 0, bytesLength = bytes.length; i < bytesLength; i++) {
+            if (bytes[i] == bc) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static boolean arrayContains(byte[] a, byte[] b) {
+        final int aLen = a.length;
+        final int bLen = b.length;
+        if (bLen > aLen) {
+            return false;
+        }
+        OUTER: for (int i = 0; i < aLen - bLen; i ++) {
+            if (a[i] == b[0]) {
+                for (int j = 0; j < bLen; j ++) {
+                    if (a[i + j] != b[j]) {
+                        continue OUTER;
+                    }
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Determine whether this string contains another string (case-sensitive).
+     *
+     * @param other the string to test
+     * @return {@code true} if this string contains {@code other}, {@code false} otherwise
+     */
+    public boolean contains(final HttpString other) {
+        if (other == this) return true;
+        if (other == null) return false;
+        final byte[] bytes = this.bytes;
+        final byte[] otherBytes = other.bytes;
+        final String otherString = other.string;
+        final String string = this.string;
+        if (bytes != null) {
+            if (otherBytes != null) {
+                return arrayContains(bytes, otherBytes);
+            } else if (string != null) {
+                assert otherBytes == null;
+                assert otherString != null;
+                return string.contains(otherString);
+            } else {
+                assert otherBytes == null;
+                assert string == null;
+                assert otherString != null; // because otherBytes == null
+                assert bytes != null; // because string == null
+                return arrayContains(bytes, other.getBytes());
+            }
+        } else {
+            assert bytes == null;
+            assert string != null; // because bytes == null
+            if (otherString != null) {
+                return string.contains(otherString);
+            } else {
+                assert otherString == null;
+                assert otherBytes != null; // because otherString == null
+                return arrayContains(getBytes(), otherBytes);
+            }
+        }
     }
 }

@@ -42,11 +42,11 @@ public class LocaleUtils {
         }
     }
 
-    public static List<Locale> getLocalesFromHeader(final String acceptLanguage) {
+    public static List<Locale> getLocalesFromHeader(final HttpString acceptLanguage) {
         return getLocalesFromHeader(Collections.singletonList(acceptLanguage));
     }
 
-    public static List<Locale> getLocalesFromHeader(final List<String> acceptLanguage) {
+    public static List<Locale> getLocalesFromHeader(final List<HttpString> acceptLanguage) {
         if (acceptLanguage == null || acceptLanguage.isEmpty()) {
             return Collections.singletonList(Locale.getDefault());
         }
@@ -55,7 +55,7 @@ public class LocaleUtils {
         for (List<QValueParser.QValueResult> qvalueResult : parsedResults) {
             for (QValueParser.QValueResult res : qvalueResult) {
                 if (!res.isQValueZero()) {
-                    Locale e = LocaleUtils.getLocaleFromString(res.getValue());
+                    Locale e = LocaleUtils.getLocaleFromString(res.getValue().toString());
                     ret.add(e);
                 }
             }

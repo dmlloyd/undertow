@@ -196,8 +196,8 @@ public class SimpleParserTestCase {
         Assert.assertSame(Protocols.HTTP_1_1, result.getProtocol());
 
         Assert.assertEquals(2, result.getRequestHeaders().getHeaderNames().size());
-        Assert.assertEquals("www.somehost.net", result.getRequestHeaders().getFirst(new HttpString("Host")));
-        Assert.assertEquals("some value", result.getRequestHeaders().getFirst(new HttpString("OtherHeader")));
+        Assert.assertEquals("www.somehost.net", result.getRequestHeaders().getFirst(new HttpString("Host")).toString());
+        Assert.assertEquals("some value", result.getRequestHeaders().getFirst(new HttpString("OtherHeader")).toString());
 
         Assert.assertEquals(ParseState.PARSE_COMPLETE, context.state);
     }

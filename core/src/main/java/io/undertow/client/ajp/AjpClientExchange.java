@@ -10,6 +10,7 @@ import io.undertow.client.ClientResponse;
 import io.undertow.client.ContinueNotification;
 import io.undertow.util.AbstractAttachable;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import org.xnio.channels.StreamSinkChannel;
 import org.xnio.channels.StreamSourceChannel;
 
@@ -45,7 +46,7 @@ public class AjpClientExchange extends AbstractAttachable implements ClientExcha
         this.clientConnection = clientConnection;
         boolean reqContinue = false;
         if (request.getRequestHeaders().contains(Headers.EXPECT)) {
-            for (String header : request.getRequestHeaders().get(Headers.EXPECT)) {
+            for (HttpString header : request.getRequestHeaders().get(Headers.EXPECT)) {
                 if (header.equals("100-continue")) {
                     reqContinue = true;
                 }

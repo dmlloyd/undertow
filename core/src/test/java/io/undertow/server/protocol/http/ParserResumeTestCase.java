@@ -83,16 +83,16 @@ public class ParserResumeTestCase {
         Assert.assertEquals("http://www.somehost.net/apath+with+spaces%20and%20I%C3%B1t%C3%ABrn%C3%A2ti%C3%B4n%C3%A0li%C5%BE%C3%A6ti%C3%B8n", result.getRequestURI());
         Assert.assertSame(Protocols.HTTP_1_1, result.getProtocol());
 
-        Assert.assertEquals("www.somehost.net", result.getRequestHeaders().getFirst(new HttpString("Host")));
-        Assert.assertEquals("some value", result.getRequestHeaders().getFirst(new HttpString("OtherHeader")));
-        Assert.assertEquals("another", result.getRequestHeaders().getFirst(new HttpString("Hostee")));
-        Assert.assertEquals("a", result.getRequestHeaders().getFirst(new HttpString("Accept-garbage")));
+        Assert.assertEquals("www.somehost.net", result.getRequestHeaders().getFirst(new HttpString("Host")).toString());
+        Assert.assertEquals("some value", result.getRequestHeaders().getFirst(new HttpString("OtherHeader")).toString());
+        Assert.assertEquals("another", result.getRequestHeaders().getFirst(new HttpString("Hostee")).toString());
+        Assert.assertEquals("a", result.getRequestHeaders().getFirst(new HttpString("Accept-garbage")).toString());
         Assert.assertEquals(4, result.getRequestHeaders().getHeaderNames().size());
 
         Assert.assertEquals(ParseState.PARSE_COMPLETE, context.state);
         Assert.assertEquals("key1=value1&key2=I%C3%B1t%C3%ABrn%C3%A2ti%C3%B4n%C3%A0li%C5%BE%C3%A6ti%C3%B8n", result.getQueryString());
-        Assert.assertEquals("value1", result.getQueryParameters().get("key1").getFirst());
-        Assert.assertEquals("Iñtërnâtiônàližætiøn", result.getQueryParameters().get("key2").getFirst());
+        Assert.assertEquals("value1", result.getQueryParameters().get("key1").getFirst().toString());
+        Assert.assertEquals("Iñtërnâtiônàližætiøn", result.getQueryParameters().get("key2").getFirst().toString());
     }
 
 }

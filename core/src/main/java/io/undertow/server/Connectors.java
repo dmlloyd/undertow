@@ -4,6 +4,7 @@ import io.undertow.UndertowLogger;
 import io.undertow.server.handlers.Cookie;
 import io.undertow.util.DateUtils;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import org.xnio.Pooled;
 import org.xnio.channels.StreamSourceChannel;
 
@@ -34,7 +35,7 @@ public class Connectors {
         Map<String, Cookie> cookies = exchange.getResponseCookiesInternal();
         if (cookies != null) {
             for (Map.Entry<String, Cookie> entry : cookies.entrySet()) {
-                exchange.getResponseHeaders().add(Headers.SET_COOKIE, getCookieString(entry.getValue()));
+                exchange.getResponseHeaders().add(Headers.SET_COOKIE, new HttpString(getCookieString(entry.getValue())));
             }
         }
     }

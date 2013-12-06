@@ -5,6 +5,7 @@ import io.undertow.examples.UndertowExample;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 
 /**
  * @author Stuart Douglas
@@ -18,7 +19,7 @@ public class HelloWorldServer {
                 .setHandler(new HttpHandler() {
                     @Override
                     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-                        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, new HttpString("text/plain"));
                         exchange.getResponseSender().send("Hello World");
                     }
                 }).build();

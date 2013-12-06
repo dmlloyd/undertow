@@ -26,6 +26,7 @@ import io.undertow.testutils.DefaultServer;
 import io.undertow.testutils.HttpClientUtils;
 import io.undertow.testutils.TestHttpClient;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -77,7 +78,7 @@ public class FixedLengthRequestTestCase {
                     inputSream.close();
                     outputStream.close();
                 } catch (IOException e) {
-                    exchange.getResponseHeaders().put(Headers.CONNECTION, "close");
+                    exchange.getResponseHeaders().put(Headers.CONNECTION, new HttpString("close"));
                     exchange.setResponseCode(500);
                     throw new RuntimeException(e);
                 }

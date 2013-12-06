@@ -145,7 +145,7 @@ public class DateUtils {
         if (lastModified == null) {
             return true;
         }
-        String modifiedSince = exchange.getRequestHeaders().getFirst(Headers.IF_MODIFIED_SINCE);
+        String modifiedSince = HttpString.toString(exchange.getRequestHeaders().getFirst(Headers.IF_MODIFIED_SINCE));
         if (modifiedSince == null) {
             return true;
         }
@@ -188,7 +188,7 @@ public class DateUtils {
         if (lastModified == null) {
             return true;
         }
-        String modifiedSince = exchange.getRequestHeaders().getFirst(Headers.IF_UNMODIFIED_SINCE);
+        String modifiedSince = HttpString.toString(exchange.getRequestHeaders().getFirst(Headers.IF_UNMODIFIED_SINCE));
         if (modifiedSince == null) {
             return true;
         }

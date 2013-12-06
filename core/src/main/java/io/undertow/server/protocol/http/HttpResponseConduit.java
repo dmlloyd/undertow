@@ -51,7 +51,7 @@ final class HttpResponseConduit extends AbstractStreamSinkConduit<StreamSinkCond
     private int state = STATE_START;
 
     private long fiCookie = -1L;
-    private String string;
+    private HttpString string;
     private HeaderValues headerValues;
     private int valueIdx;
     private int charIndex;
@@ -154,8 +154,8 @@ final class HttpResponseConduit extends AbstractStreamSinkConduit<StreamSinkCond
         buffer.put((byte) (code / 10 % 10 + '0'));
         buffer.put((byte) (code % 10 + '0'));
         buffer.put((byte) ' ');
-        String string = StatusCodes.getReason(code);
-        writeString(buffer, string);
+        HttpString string = null;
+        StatusCodes.getReason(code).appendTo(buffer);
         buffer.put((byte) '\r').put((byte) '\n');
 
         int remaining = buffer.remaining();
@@ -197,7 +197,7 @@ final class HttpResponseConduit extends AbstractStreamSinkConduit<StreamSinkCond
                     buffer.flip();
                     return processStatefulWrite(STATE_HDR_VAL, userData);
                 }
-                writeString(buffer, string);
+                string.appendTo(buffer);
                 buffer.put((byte) '\r').put((byte) '\n');
             }
             fiCookie = headers.fiNextNonEmpty(fiCookie);
@@ -254,7 +254,7 @@ final class HttpResponseConduit extends AbstractStreamSinkConduit<StreamSinkCond
         int valueIdx = this.valueIdx;
         int charIndex = this.charIndex;
         int length;
-        String string = this.string;
+        HttpString string = this.string;
         HeaderValues headerValues = this.headerValues;
         int res;
         // BUFFER IS FLIPPED COMING IN
@@ -276,7 +276,7 @@ final class HttpResponseConduit extends AbstractStreamSinkConduit<StreamSinkCond
                     length = headerName.length();
                     while (charIndex < length) {
                         if (buffer.hasRemaining()) {
-                            buffer.put(headerName.byteAt(charIndex++));
+                            charIndex += headerName.tryAppendTo(charIndex, buffer);
                         } else {
                             buffer.flip();
                             do {
@@ -342,7 +342,7 @@ final class HttpResponseConduit extends AbstractStreamSinkConduit<StreamSinkCond
                     length = string.length();
                     while (charIndex < length) {
                         if (buffer.hasRemaining()) {
-                            buffer.put((byte) string.charAt(charIndex++));
+                            charIndex += string.tryAppendTo(charIndex, buffer);
                         } else {
                             buffer.flip();
                             do {
@@ -489,7 +489,7 @@ final class HttpResponseConduit extends AbstractStreamSinkConduit<StreamSinkCond
         }
     }
 
-    private boolean flushHeaderBuffer(ByteBuffer buffer, String string, HeaderValues headerValues, int charIndex, long fiCookie, int valueIdx) throws IOException {
+    private boolean flushHeaderBuffer(ByteBuffer buffer, HttpString string, HeaderValues headerValues, int charIndex, long fiCookie, int valueIdx) throws IOException {
         int res;
         buffer.flip();
         do {

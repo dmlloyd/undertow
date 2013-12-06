@@ -68,7 +68,7 @@ public class ContentEncodedResourceTestCase {
                 Assert.assertEquals(200, result.getStatusLine().getStatusCode());
                 String response = HttpClientUtils.readResponse(result);
                 Assert.assertEquals("hello world", response);
-                Assert.assertEquals("deflate", result.getHeaders(Headers.CONTENT_ENCODING_STRING)[0].getValue());
+                Assert.assertEquals("deflate", result.getHeaders(Headers.CONTENT_ENCODING_STRING)[0].getValue().toString());
             }
             writeFile(f, "modified file");
 
@@ -78,7 +78,7 @@ public class ContentEncodedResourceTestCase {
             Assert.assertEquals(200, result.getStatusLine().getStatusCode());
             String response = HttpClientUtils.readResponse(result);
             Assert.assertEquals("hello world", response);
-            Assert.assertEquals("deflate", result.getHeaders(Headers.CONTENT_ENCODING_STRING)[0].getValue());
+            Assert.assertEquals("deflate", result.getHeaders(Headers.CONTENT_ENCODING_STRING)[0].getValue().toString());
 
         } finally {
             client.getConnectionManager().shutdown();

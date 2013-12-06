@@ -29,6 +29,7 @@ import io.undertow.server.Connectors;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import org.xnio.ChannelListener;
 import org.xnio.IoUtils;
 import org.xnio.Pooled;
@@ -51,13 +52,14 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
 
     @Override
     public FormDataParser create(final HttpServerExchange exchange)  {
-        String mimeType = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
-        if (mimeType != null && mimeType.startsWith(APPLICATION_X_WWW_FORM_URLENCODED)) {
+        HttpString mimeType = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
+        // todo - optimize this somewhat
+        if (mimeType != null && mimeType.toString().startsWith(APPLICATION_X_WWW_FORM_URLENCODED)) {
 
             String charset = defaultEncoding;
-            String contentType = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
+            HttpString contentType = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
             if (contentType != null) {
-                String cs = Headers.extractTokenFromHeader(contentType, "charset");
+                String cs = Headers.extractTokenFromHeader(contentType.toString(), "charset");
                 if (cs != null) {
                     charset = cs;
                 }

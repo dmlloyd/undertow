@@ -19,12 +19,12 @@ public class RequestHeaderAttribute implements ExchangeAttribute {
 
     @Override
     public String readAttribute(final HttpServerExchange exchange) {
-        return exchange.getRequestHeaders().getFirst(requestHeader);
+        return HttpString.toString(exchange.getRequestHeaders().getFirst(requestHeader));
     }
 
     @Override
     public void writeAttribute(final HttpServerExchange exchange, final String newValue) throws ReadOnlyAttributeException {
-        exchange.getRequestHeaders().put(requestHeader, newValue);
+        exchange.getRequestHeaders().put(requestHeader, new HttpString(newValue));
     }
 
     public static final class Builder implements ExchangeAttributeBuilder {

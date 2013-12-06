@@ -110,8 +110,7 @@ public final class HttpServletResponseImpl implements HttpServletResponse {
         return encodeRedirectURL(url);
     }
 
-    @Override
-    public void sendError(final int sc, final String msg) throws IOException {
+    public void sendError(final int sc, final HttpString msg) throws IOException {
         if (responseStarted()) {
             throw UndertowServletMessages.MESSAGES.responseAlreadyCommited();
         }
@@ -125,7 +124,7 @@ public final class HttpServletResponseImpl implements HttpServletResponse {
             RequestDispatcherImpl requestDispatcher = new RequestDispatcherImpl(location, servletContext);
             final ServletRequestContext servletRequestContext = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
             try {
-                requestDispatcher.error(servletRequestContext.getServletRequest(), servletRequestContext.getServletResponse(), exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY).getCurrentServlet().getManagedServlet().getServletInfo().getName(), msg);
+                requestDispatcher.error(servletRequestContext.getServletRequest(), servletRequestContext.getServletResponse(), exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY).getCurrentServlet().getManagedServlet().getServletInfo().getName(), HttpString.toString(msg));
             } catch (ServletException e) {
                 throw new RuntimeException(e);
             }
@@ -135,6 +134,11 @@ public final class HttpServletResponseImpl implements HttpServletResponse {
             getWriter().close();
         }
         responseDone();
+    }
+
+    @Override
+    public void sendError(final int sc, final String msg) throws IOException {
+        sendError(sc, new HttpString(msg));
     }
 
     @Override
@@ -151,7 +155,7 @@ public final class HttpServletResponseImpl implements HttpServletResponse {
         setStatus(302);
         String realPath;
         if (location.contains("://")) {//absolute url
-            exchange.getResponseHeaders().put(Headers.LOCATION, location);
+            exchange.getResponseHeaders().put(Headers.LOCATION, new HttpString(location));
         } else {
             if (location.startsWith("/")) {
                 realPath = location;
@@ -164,7 +168,7 @@ public final class HttpServletResponseImpl implements HttpServletResponse {
                 realPath = servletContext.getContextPath() + CanonicalPathUtils.canonicalize(current + location);
             }
             String loc = exchange.getRequestScheme() + "://" + exchange.getHostAndPort() + realPath;
-            exchange.getResponseHeaders().put(Headers.LOCATION, loc);
+            exchange.getResponseHeaders().put(Headers.LOCATION, new HttpString(loc));
         }
         responseDone();
     }
@@ -189,7 +193,7 @@ public final class HttpServletResponseImpl implements HttpServletResponse {
         if (insideInclude) {
             return;
         }
-        exchange.getResponseHeaders().put(name, value);
+        exchange.getResponseHeaders().put(name, new HttpString(value));
     }
 
     @Override
@@ -201,7 +205,7 @@ public final class HttpServletResponseImpl implements HttpServletResponse {
         if (insideInclude) {
             return;
         }
-        exchange.getResponseHeaders().add(name, value);
+        exchange.getResponseHeaders().addLast(name, new HttpString(value));
     }
 
     @Override
@@ -240,12 +244,12 @@ public final class HttpServletResponseImpl implements HttpServletResponse {
 
     @Override
     public String getHeader(final String name) {
-        return exchange.getResponseHeaders().getFirst(name);
+        return HttpString.toString(exchange.getResponseHeaders().getFirst(name));
     }
 
     @Override
     public Collection<String> getHeaders(final String name) {
-        return new ArrayList<String>(exchange.getResponseHeaders().get(name));
+        return new ArrayList<String>(exchange.getResponseHeaders().get(name).asStrings());
     }
 
     @Override
@@ -323,7 +327,7 @@ public final class HttpServletResponseImpl implements HttpServletResponse {
         charsetSet = true;
         this.charset = charset;
         if (contentType != null) {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, getContentType());
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, new HttpString(getContentType()));
         }
     }
 
@@ -332,7 +336,7 @@ public final class HttpServletResponseImpl implements HttpServletResponse {
         if (insideInclude || responseStarted()) {
             return;
         }
-        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, Integer.toString(len));
+        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, new HttpString(Integer.toString(len)));
         this.contentLength = (long) len;
     }
 
@@ -341,7 +345,7 @@ public final class HttpServletResponseImpl implements HttpServletResponse {
         if (insideInclude || responseStarted()) {
             return;
         }
-        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, Long.toString(len));
+        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, new HttpString(Long.toString(len)));
         this.contentLength = len;
     }
 
@@ -406,7 +410,7 @@ public final class HttpServletResponseImpl implements HttpServletResponse {
                 break;
             }
         }
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, getContentType());
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, new HttpString(getContentType()));
     }
 
     @Override
@@ -482,7 +486,7 @@ public final class HttpServletResponseImpl implements HttpServletResponse {
             return;
         }
         this.locale = loc;
-        exchange.getResponseHeaders().put(Headers.CONTENT_LANGUAGE, loc.getLanguage() + "-" + loc.getCountry());
+        exchange.getResponseHeaders().put(Headers.CONTENT_LANGUAGE, new HttpString(loc.getLanguage() + "-" + loc.getCountry()));
         if (!charsetSet && writer == null) {
             final Map<String, String> localeCharsetMapping = servletContext.getDeployment().getDeploymentInfo().getLocaleCharsetMapping();
             // Match full language_country_variant first, then language_country,
@@ -498,7 +502,7 @@ public final class HttpServletResponseImpl implements HttpServletResponse {
             if (charset != null) {
                 this.charset = charset;
                 if (contentType != null) {
-                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, getContentType());
+                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, new HttpString(getContentType()));
                 }
             }
         }

@@ -19,6 +19,7 @@ import io.undertow.util.DateUtils;
 import io.undertow.util.ETag;
 import io.undertow.util.ETagUtils;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import io.undertow.util.MimeMappings;
 import io.undertow.util.RedirectBuilder;
@@ -29,6 +30,7 @@ import io.undertow.util.StatusCodes;
  */
 public class ResourceHandler implements HttpHandler {
 
+    private static final HttpString APPLICATION_OCTET_STREAM = new HttpString("application/octet-stream");
     private final List<String> welcomeFiles = new CopyOnWriteArrayList<String>(new String[]{"index.html", "index.htm", "default.html", "default.htm"});
     /**
      * If directory listing is enabled.
@@ -93,13 +95,13 @@ public class ResourceHandler implements HttpHandler {
 
         //we set caching headers before we try and serve from the cache
         if (cachable && cacheTime != null) {
-            exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "public, max-age=" + cacheTime);
+            exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, new HttpString("public, max-age=" + cacheTime));
             if (System.currentTimeMillis() > lastExpiryDate) {
                 long date = System.currentTimeMillis();
                 lastExpiryHeader = DateUtils.toDateString(new Date(date));
                 lastExpiryDate = date;
             }
-            exchange.getResponseHeaders().put(Headers.EXPIRES, lastExpiryHeader);
+            exchange.getResponseHeaders().put(Headers.EXPIRES, new HttpString(lastExpiryHeader));
         }
 
         if (cache != null && cachable) {
@@ -150,7 +152,7 @@ public class ResourceHandler implements HttpHandler {
                         }
                     } else if (!exchange.getRequestPath().endsWith("/")) {
                         exchange.setResponseCode(302);
-                        exchange.getResponseHeaders().put(Headers.LOCATION, RedirectBuilder.redirect(exchange, exchange.getRelativePath() + "/", true));
+                        exchange.getResponseHeaders().put(Headers.LOCATION, new HttpString(RedirectBuilder.redirect(exchange, exchange.getRelativePath() + "/", true)));
                         exchange.endExchange();
                         return;
                     }
@@ -175,19 +177,19 @@ public class ResourceHandler implements HttpHandler {
                 //we are going to proceed. Set the appropriate headers
                 final String contentType = resource.getContentType(mimeMappings);
                 if (contentType != null) {
-                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, contentType);
+                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, new HttpString(contentType));
                 } else {
-                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/octet-stream");
+                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
                 }
                 if (lastModified != null) {
-                    exchange.getResponseHeaders().put(Headers.LAST_MODIFIED, resource.getLastModifiedString());
+                    exchange.getResponseHeaders().put(Headers.LAST_MODIFIED, new HttpString(resource.getLastModifiedString()));
                 }
                 if (etag != null) {
-                    exchange.getResponseHeaders().put(Headers.ETAG, etag.toString());
+                    exchange.getResponseHeaders().put(Headers.ETAG, new HttpString(etag.toString()));
                 }
                 Long contentLength = resource.getContentLength();
                 if (contentLength != null) {
-                    exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, contentLength.toString());
+                    exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, HttpString.fromLong(contentLength.longValue()));
                 }
 
                 final ContentEncodedResourceManager contentEncodedResourceManager = ResourceHandler.this.contentEncodedResourceManager;
@@ -195,7 +197,7 @@ public class ResourceHandler implements HttpHandler {
                     try {
                         ContentEncodedResource encoded = contentEncodedResourceManager.getResource(resource, exchange);
                         if (encoded != null) {
-                            exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, encoded.getContentEncoding());
+                            exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, new HttpString(encoded.getContentEncoding()));
                             exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, encoded.getResource().getContentLength());
                             encoded.getResource().serve(exchange.getResponseSender(), exchange, IoCallback.END_EXCHANGE);
                             return;

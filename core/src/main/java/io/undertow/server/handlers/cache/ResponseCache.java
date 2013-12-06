@@ -127,26 +127,26 @@ public class ResponseCache {
 
         //we are going to proceed. Set the appropriate headers
         if(existingKey.getContentType() != null) {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, existingKey.getContentType());
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, new HttpString(existingKey.getContentType()));
         }
         if(existingKey.getContentEncoding() != null && !Headers.IDENTITY.equalsIgnoreCase(HttpString.tryFromString(existingKey.getContentEncoding()))) {
-            exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, existingKey.getContentEncoding());
+            exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, HttpString.tryFromString(existingKey.getContentEncoding()));
         }
         if(existingKey.getLastModified() != null) {
-            exchange.getResponseHeaders().put(Headers.LAST_MODIFIED, DateUtils.toDateString(existingKey.getLastModified()));
+            exchange.getResponseHeaders().put(Headers.LAST_MODIFIED, HttpString.tryFromString(DateUtils.toDateString(existingKey.getLastModified())));
         }
         if(existingKey.getContentLocation() != null) {
-            exchange.getResponseHeaders().put(Headers.CONTENT_LOCATION, existingKey.getContentLocation());
+            exchange.getResponseHeaders().put(Headers.CONTENT_LOCATION, HttpString.tryFromString(existingKey.getContentLocation()));
         }
         if(existingKey.getLanguage() != null) {
-            exchange.getResponseHeaders().put(Headers.CONTENT_LANGUAGE, existingKey.getLanguage());
+            exchange.getResponseHeaders().put(Headers.CONTENT_LANGUAGE, HttpString.tryFromString(existingKey.getLanguage()));
         }
         if(etag != null) {
-            exchange.getResponseHeaders().put(Headers.CONTENT_LANGUAGE, etag.toString());
+            exchange.getResponseHeaders().put(Headers.CONTENT_LANGUAGE, HttpString.tryFromString(etag.toString()));
         }
 
         //TODO: support if-range
-        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, Long.toString(entry.size()));
+        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, entry.size());
         if (exchange.getRequestMethod().equalsIgnoreCase(HEAD)) {
             exchange.endExchange();
             return true;

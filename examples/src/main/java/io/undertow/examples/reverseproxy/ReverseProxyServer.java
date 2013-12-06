@@ -8,6 +8,7 @@ import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -25,7 +26,7 @@ public class ReverseProxyServer {
                     .setHandler(new HttpHandler() {
                         @Override
                         public void handleRequest(HttpServerExchange exchange) throws Exception {
-                            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, new HttpString("text/plain"));
                             exchange.getResponseSender().send("Server1");
                         }
                     })
@@ -38,7 +39,7 @@ public class ReverseProxyServer {
                     .setHandler(new HttpHandler() {
                         @Override
                         public void handleRequest(HttpServerExchange exchange) throws Exception {
-                            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, new HttpString("text/plain"));
                             exchange.getResponseSender().send("Server2");
                         }
                     })
@@ -50,7 +51,7 @@ public class ReverseProxyServer {
                     .setHandler(new HttpHandler() {
                         @Override
                         public void handleRequest(HttpServerExchange exchange) throws Exception {
-                            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, new HttpString("text/plain"));
                             exchange.getResponseSender().send("Server3");
                         }
                     })

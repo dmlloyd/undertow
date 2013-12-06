@@ -44,21 +44,21 @@ public class QValueParser {
      * @param headers The headers
      * @return The q value results
      */
-    public static List<List<QValueResult>> parse(List<String> headers) {
+    public static List<List<QValueResult>> parse(List<HttpString> headers) {
         final List<QValueResult> found = new ArrayList<QValueResult>();
         QValueResult current = null;
-        for (final String header : headers) {
+        for (final HttpString header : headers) {
             final int l = header.length();
             //we do not use a string builder
             //we just keep track of where the current string starts and call substring()
             int stringStart = 0;
             for (int i = 0; i < l; ++i) {
-                char c = header.charAt(i);
+                byte c = header.byteAt(i);
                 switch (c) {
                     case ',': {
                         if (current != null &&
-                                (i - stringStart > 2 && header.charAt(stringStart) == 'q' &&
-                                        header.charAt(stringStart + 1) == '=')) {
+                                (i - stringStart > 2 && header.byteAt(stringStart) == 'q' &&
+                                        header.byteAt(stringStart + 1) == '=')) {
                             //if this is a valid qvalue
                             current.qvalue = header.substring(stringStart + 2, i);
                             current = null;
@@ -78,8 +78,8 @@ public class QValueParser {
                     case ' ': {
                         if (stringStart != i) {
                             if (current != null &&
-                                    (i - stringStart > 2 && header.charAt(stringStart) == 'q' &&
-                                            header.charAt(stringStart + 1) == '=')) {
+                                    (i - stringStart > 2 && header.byteAt(stringStart) == 'q' &&
+                                            header.byteAt(stringStart + 1) == '=')) {
                                 //if this is a valid qvalue
                                 current.qvalue = header.substring(stringStart + 2, i);
                             } else {
@@ -93,8 +93,8 @@ public class QValueParser {
 
             if (stringStart != l) {
                 if (current != null &&
-                        (l - stringStart > 2 && header.charAt(stringStart) == 'q' &&
-                                header.charAt(stringStart + 1) == '=')) {
+                        (l - stringStart > 2 && header.byteAt(stringStart) == 'q' &&
+                                header.byteAt(stringStart + 1) == '=')) {
                     //if this is a valid qvalue
                     current.qvalue = header.substring(stringStart + 2, l);
                 } else {
@@ -103,7 +103,7 @@ public class QValueParser {
             }
         }
         Collections.sort(found, Collections.reverseOrder());
-        String currentQValue = null;
+        HttpString currentQValue = null;
         List<List<QValueResult>> values = new ArrayList<List<QValueResult>>();
         List<QValueResult> currentSet = null;
 
@@ -118,12 +118,14 @@ public class QValueParser {
         return values;
     }
 
-    private static QValueResult handleNewEncoding(final List<QValueResult> found, final String header, final int stringStart, final int i) {
+    private static QValueResult handleNewEncoding(final List<QValueResult> found, final HttpString header, final int stringStart, final int i) {
         final QValueResult current = new QValueResult();
         current.value = header.substring(stringStart, i);
         found.add(current);
         return current;
     }
+
+    private static final HttpString ONE = new HttpString("1");
 
     public static class QValueResult implements Comparable<QValueResult> {
 
@@ -131,20 +133,20 @@ public class QValueParser {
         /**
          * The string value of the result
          */
-        private String value;
+        private HttpString value;
 
         /**
          * we keep the qvalue as a string to avoid parsing the double.
          * <p/>
          * This should give both performance and also possible security improvements
          */
-        private String qvalue = "1";
+        private HttpString qvalue = ONE;
 
-        public String getValue() {
+        public HttpString getValue() {
             return value;
         }
 
-        public String getQvalue() {
+        public HttpString getQvalue() {
             return qvalue;
         }
 
@@ -153,8 +155,8 @@ public class QValueParser {
             //we compare the strings as if they were decimal values.
             //we know they can only be
 
-            final String t = qvalue;
-            final String o = other.qvalue;
+            final HttpString t = qvalue;
+            final HttpString o = other.qvalue;
             if (t == null && o == null) {
                 //neither of them has a q value
                 //we compare them via the server specified default precedence
@@ -177,8 +179,8 @@ public class QValueParser {
                     return ol - tl; //longer one is higher
                 }
                 if (i == 1) continue; // this is just the decimal point
-                final int tc = t.charAt(i);
-                final int oc = o.charAt(i);
+                final int tc = t.byteAt(i) & 0xff;
+                final int oc = o.byteAt(i) & 0xff;
 
                 int res = tc - oc;
                 if (res != 0) {
@@ -198,7 +200,7 @@ public class QValueParser {
                 boolean zero = true;
                 for (int j = 0; j < length; ++j) {
                     if (j == 1) continue;//decimal point
-                    if (qvalue.charAt(j) != '0') {
+                    if (qvalue.byteAt(j) != '0') {
                         zero = false;
                         break;
                     }

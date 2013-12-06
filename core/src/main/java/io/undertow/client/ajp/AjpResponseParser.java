@@ -135,7 +135,7 @@ public class AjpResponseParser extends AbstractAjpParser {
                         state.state = AjpResponseParseState.READING_HEADERS;
                         return;
                     }
-                    builder.getResponseHeaders().add(state.currentHeader, result.value);
+                    builder.getResponseHeaders().add(state.currentHeader, new HttpString(result.value));
                     state.currentHeader = null;
                     ++readHeaders;
                 }

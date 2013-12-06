@@ -53,7 +53,7 @@ public class LotsOfHeadersResponseTestCase {
             @Override
             public void handleRequest(final HttpServerExchange exchange) {
                 for (int i = 0; i < COUNT; ++i) {
-                    exchange.getResponseHeaders().put(HttpString.tryFromString(HEADER + i), MESSAGE + i);
+                    exchange.getResponseHeaders().put(HttpString.tryFromString(HEADER + i), new HttpString(MESSAGE + i));
                 }
             }
         });

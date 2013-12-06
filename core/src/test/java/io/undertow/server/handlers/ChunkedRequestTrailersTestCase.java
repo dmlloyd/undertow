@@ -27,6 +27,7 @@ import io.undertow.testutils.DefaultServer;
 import io.undertow.testutils.HttpClientUtils;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HeaderValues;
+import io.undertow.util.HttpString;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -70,10 +71,10 @@ public class ChunkedRequestTrailersTestCase {
 
                     HeaderMap headers = exchange.getAttachment(ChunkedStreamSourceConduit.TRAILERS);
                     for (HeaderValues header : headers) {
-                        for (String val : header) {
-                            outputStream.write(header.getHeaderName().toString().getBytes());
+                        for (HttpString val : header) {
+                            header.getHeaderName().writeTo(outputStream);
                             outputStream.write(": ".getBytes());
-                            outputStream.write(val.getBytes());
+                            val.writeTo(outputStream);
                             outputStream.write("\r\n".getBytes());
                         }
                     }

@@ -30,6 +30,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import io.undertow.util.StatusCodes;
 
 /**
@@ -39,6 +40,7 @@ import io.undertow.util.StatusCodes;
  */
 public class SimpleErrorPageHandler implements HttpHandler {
 
+    private static final HttpString TEXT_HTML = new HttpString("text/html");
     private volatile HttpHandler next = ResponseCodeHandler.HANDLE_404;
 
     /**
@@ -64,8 +66,8 @@ public class SimpleErrorPageHandler implements HttpHandler {
                 Set<Integer> codes = responseCodes;
                 if (codes == null ? exchange.getResponseCode() >= 400 : codes.contains(Integer.valueOf(exchange.getResponseCode()))) {
                     final String errorPage = "<html><head><title>Error</title></head><body>" + exchange.getResponseCode() + " - " + StatusCodes.getReason(exchange.getResponseCode()) + "</body></html>";
-                    exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, "" + errorPage.length());
-                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/html");
+                    exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, errorPage.length());
+                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, TEXT_HTML);
                     Sender sender = exchange.getResponseSender();
                     sender.send(errorPage);
                     return true;

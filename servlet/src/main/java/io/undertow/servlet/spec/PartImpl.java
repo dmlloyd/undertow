@@ -65,9 +65,13 @@ public class PartImpl implements Part {
         }
     }
 
+    static String asString(Object obj) {
+        return obj == null ? null : obj.toString();
+    }
+
     @Override
     public String getContentType() {
-        return formValue.getHeaders().getFirst(Headers.CONTENT_TYPE);
+        return asString(formValue.getHeaders().getFirst(Headers.CONTENT_TYPE));
     }
 
     @Override
@@ -114,12 +118,12 @@ public class PartImpl implements Part {
 
     @Override
     public String getHeader(final String name) {
-        return formValue.getHeaders().getFirst(new HttpString(name));
+        return asString(formValue.getHeaders().getFirst(new HttpString(name)));
     }
 
     @Override
     public Collection<String> getHeaders(final String name) {
-        HeaderValues values = formValue.getHeaders().get(new HttpString(name));
+        HeaderValues.AsStrings values = formValue.getHeaders().get(new HttpString(name)).asStrings();
         return values == null ? Collections.<String>emptyList() : values;
     }
 
