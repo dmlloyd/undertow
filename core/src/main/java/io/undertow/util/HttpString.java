@@ -129,9 +129,21 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
     }
 
     private HttpString(final byte[] bytes, final String string) {
-        assert bytes != null || string != null;
+        assert bytes != null;
         this.bytes = bytes;
         this.string = string;
+    }
+
+    /**
+     * Get an {@code HttpString} from a {@code String}.  Common string values may be cached.
+     *
+     * @param string the source string
+     * @return the HTTP string
+     */
+    public static HttpString fromString(String string) {
+        HttpString httpString = Headers.headerFromString(string);
+        if (httpString == null) httpString = new HttpString(string);
+        return httpString;
     }
 
     /**
@@ -142,6 +154,10 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      * @return the HTTP string, or {@code null} if the string is not in a compatible encoding
      */
     public static HttpString tryFromString(String string) {
+        HttpString httpString = Headers.headerFromString(string);
+        if (httpString != null) {
+            return httpString;
+        }
         final int len = string.length();
         for (int i = 0; i < len; i++) {
             char c = string.charAt(i);

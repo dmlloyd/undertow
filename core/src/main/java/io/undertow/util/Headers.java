@@ -18,6 +18,9 @@
 
 package io.undertow.util;
 
+import java.lang.reflect.Field;
+import java.util.HashMap;
+
 /**
  * NOTE: if you add a new header here you must also add it to {@link io.undertow.server.protocol.http.HttpRequestParser}
  *
@@ -292,5 +295,26 @@ public final class Headers {
             }
             return header.substring(start, end);
         }
+    }
+
+    private static final HashMap<String, HttpString> ALL_HEADERS;
+
+    static {
+        HashMap<String, HttpString> map = new HashMap<String, HttpString>();
+        try {
+            for (Field field : Headers.class.getDeclaredFields()) {
+                if (field.getType() == HttpString.class) {
+                    final HttpString httpString = (HttpString) field.get(null);
+                    map.put(httpString.toString(), httpString);
+                }
+            }
+        } catch (IllegalAccessException e) {
+            throw new IllegalAccessError(e.getMessage());
+        }
+        ALL_HEADERS = map;
+    }
+
+    static HttpString headerFromString(String str) {
+        return ALL_HEADERS.get(str);
     }
 }
