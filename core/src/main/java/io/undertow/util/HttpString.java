@@ -35,6 +35,9 @@ import static java.util.Arrays.copyOfRange;
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 public final class HttpString implements Comparable<HttpString>, Serializable {
+
+    private static final long serialVersionUID = -6359344368200312000L;
+
     private static final byte[] hi;
 
     static {
