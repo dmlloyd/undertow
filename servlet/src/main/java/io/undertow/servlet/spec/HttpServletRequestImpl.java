@@ -562,7 +562,7 @@ public final class HttpServletRequestImpl implements HttpServletRequest {
         }
         Deque<String> params = queryParameters.get(name);
         if (params == null) {
-            if (exchange.getRequestMethod().equals(Methods.POST)) {
+            if (exchange.getRequestMethod().equalsIgnoreCase(Methods.POST)) {
                 final FormData parsedFormData = parseFormData();
                 if (parsedFormData != null) {
                     FormData.FormValue res = parsedFormData.getFirst(name);
@@ -584,7 +584,7 @@ public final class HttpServletRequestImpl implements HttpServletRequest {
             queryParameters = exchange.getQueryParameters();
         }
         final Set<String> parameterNames = new HashSet<String>(queryParameters.keySet());
-        if (exchange.getRequestMethod().equals(Methods.POST)) {
+        if (exchange.getRequestMethod().equalsIgnoreCase(Methods.POST)) {
             final FormData parsedFormData = parseFormData();
             if (parsedFormData != null) {
                 Iterator<String> it = parsedFormData.iterator();
@@ -614,7 +614,7 @@ public final class HttpServletRequestImpl implements HttpServletRequest {
                 ret.add(param);
             }
         }
-        if (exchange.getRequestMethod().equals(Methods.POST)) {
+        if (exchange.getRequestMethod().equalsIgnoreCase(Methods.POST)) {
             final FormData parsedFormData = parseFormData();
             if (parsedFormData != null) {
                 Deque<FormData.FormValue> res = parsedFormData.get(name);
@@ -642,7 +642,7 @@ public final class HttpServletRequestImpl implements HttpServletRequest {
         for (Map.Entry<String, Deque<String>> entry : queryParameters.entrySet()) {
             arrayMap.put(entry.getKey(), new ArrayList<String>(entry.getValue()));
         }
-        if (exchange.getRequestMethod().equals(Methods.POST)) {
+        if (exchange.getRequestMethod().equalsIgnoreCase(Methods.POST)) {
 
             final FormData parsedFormData = parseFormData();
             if (parsedFormData != null) {

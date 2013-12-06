@@ -24,6 +24,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import static java.lang.Integer.signum;
 import static java.lang.System.arraycopy;
@@ -52,6 +53,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
 
     private byte[] bytes;
     private transient int hashCode;
+    private transient int hashCodeIgnoreCase;
     private transient String string;
 
     /**
@@ -228,12 +230,52 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
     }
 
     /**
+     * Compare this string to another in a case-sensitive manner.
+     *
+     * @param other the other string
+     * @return -1, 0, or 1
+     */
+    @Override
+    public int compareTo(final HttpString other) {
+        if (other == this) return 0;
+        final byte[] bytes = this.bytes;
+        final byte[] otherBytes = other.bytes;
+        final String otherString = other.string;
+        final String string = this.string;
+        if (bytes != null) {
+            if (otherBytes != null) {
+                return arrayCompareTo(bytes, otherBytes);
+            } else if (string != null) {
+                assert otherBytes == null;
+                assert otherString != null;
+                return string.compareTo(otherString);
+            } else {
+                assert otherBytes == null;
+                assert string == null;
+                assert otherString != null; // because otherBytes == null
+                assert bytes != null; // because string == null
+                return arrayCompareTo(bytes, other.getBytes());
+            }
+        } else {
+            assert bytes == null;
+            assert string != null; // because bytes == null
+            if (otherString != null) {
+                return string.compareTo(otherString);
+            } else {
+                assert otherString == null;
+                assert otherBytes != null; // because otherString == null
+                return arrayCompareTo(getBytes(), otherBytes);
+            }
+        }
+    }
+
+    /**
      * Compare this string to another in a case-insensitive manner.
      *
      * @param other the other string
      * @return -1, 0, or 1
      */
-    public int compareTo(final HttpString other) {
+    public int compareToIgnoreCase(final HttpString other) {
         if (other == this) return 0;
         final byte[] bytes = this.bytes;
         final byte[] otherBytes = other.bytes;
@@ -266,6 +308,21 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
         }
     }
 
+    private static int arrayCompareTo(byte[] bytes, byte[] otherBytes) {
+        final int length = bytes.length;
+        final int otherLength = otherBytes.length;
+        // shorter strings sort higher
+        if (length != otherLength) return signum(length - otherLength);
+        final int len = Math.min(length, otherLength);
+        int res;
+        for (int i = 0; i < len; i++) {
+            res = signum(bytes[i] - otherBytes[i]);
+            if (res != 0) return res;
+        }
+        // it am unpossible
+        throw new IllegalStateException();
+    }
+
     private static int arrayCompareToIgnoreCase(byte[] bytes, byte[] otherBytes) {
         final int length = bytes.length;
         final int otherLength = otherBytes.length;
@@ -290,8 +347,22 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
     public int hashCode() {
         int hashCode = this.hashCode;
         if (hashCode == 0) {
+            final String string = this.string;
+            hashCode = this.hashCode = string != null ? string.hashCode() : calcHashCode(bytes);
+        }
+        return hashCode;
+    }
+
+    /**
+     * Get the hash code, ignoring case.
+     *
+     * @return the hash code
+     */
+    public int hashCodeIgnoreCase() {
+        int hashCode = this.hashCodeIgnoreCase;
+        if (hashCode == 0) {
             final byte[] bytes = this.bytes;
-            hashCode = this.hashCode = bytes != null ? calcHashCodeIgnoreCase(bytes) : hashCodeIgnoreCaseOf(string);
+            hashCode = this.hashCodeIgnoreCase = bytes != null ? calcHashCodeIgnoreCase(bytes) : hashCodeIgnoreCaseOf(string);
         }
         return hashCode;
     }
@@ -308,12 +379,52 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
     }
 
     /**
-     * Determine if this {@code HttpString} is equal to another.
+     * Determine if this {@code HttpString} is equal to another, including case.
      *
      * @param other the other object
      * @return {@code true} if they are equal, {@code false} otherwise
      */
     public boolean equals(final HttpString other) {
+        if (other == this) return true;
+        if (other == null) return false;
+        final byte[] bytes = this.bytes;
+        final byte[] otherBytes = other.bytes;
+        final String otherString = other.string;
+        final String string = this.string;
+        if (bytes != null) {
+            if (otherBytes != null) {
+                return Arrays.equals(bytes, otherBytes);
+            } else if (string != null) {
+                assert otherBytes == null;
+                assert otherString != null;
+                return string.equals(otherString);
+            } else {
+                assert otherBytes == null;
+                assert string == null;
+                assert otherString != null; // because otherBytes == null
+                assert bytes != null; // because string == null
+                return Arrays.equals(bytes, other.getBytes());
+            }
+        } else {
+            assert bytes == null;
+            assert string != null; // because bytes == null
+            if (otherString != null) {
+                return string.equals(otherString);
+            } else {
+                assert otherString == null;
+                assert otherBytes != null; // because otherString == null
+                return Arrays.equals(getBytes(), otherBytes);
+            }
+        }
+    }
+
+    /**
+     * Determine if this {@code HttpString} is equal to another, ignoring case.
+     *
+     * @param other the other object
+     * @return {@code true} if they are equal, {@code false} otherwise
+     */
+    public boolean equalsIgnoreCase(final HttpString other) {
         if (other == this) return true;
         if (other == null) return false;
         final byte[] bytes = this.bytes;
@@ -345,6 +456,14 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
                 return arrayEqualIgnoreCase(getBytes(), otherBytes);
             }
         }
+    }
+
+    private static int calcHashCode(final byte[] bytes) {
+        int hc = 31;
+        for (byte b : bytes) {
+            hc = (hc << 5) - hc + (b & 0xff);
+        }
+        return hc;
     }
 
     private static int calcHashCodeIgnoreCase(final byte[] bytes) {
@@ -405,12 +524,41 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
     }
 
     /**
+     * Determine whether this {@code HttpString} is equal (case-sensitively) to the given {@code String}.
+     *
+     * @param str the string to check
+     * @return {@code true} if the given string is equal (case-sensitively) to this instance, {@code false} otherwise
+     */
+    public boolean equalToString(String str) {
+        if (str == null) return false;
+        final String string = this.string;
+        if (string != null) {
+            return str.equals(string);
+        }
+        final byte[] bytes = this.bytes;
+        final int length = bytes.length;
+        if (str.length() != length) {
+            return false;
+        }
+        final int len = length;
+        char ch;
+        for (int i = 0; i < len; i++) {
+            ch = str.charAt(i);
+            if (ch > 0xff || bytes[i] != (byte) str.charAt(i)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Determine whether this {@code HttpString} is equal (case-insensitively) to the given {@code String}.
      *
      * @param str the string to check
      * @return {@code true} if the given string is equal (case-insensitively) to this instance, {@code false} otherwise
      */
     public boolean equalToStringIgnoreCase(String str) {
+        if (str == null) return false;
         final String string = this.string;
         if (string != null) {
             return str.equalsIgnoreCase(string);
@@ -421,8 +569,10 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
             return false;
         }
         final int len = length;
+        char ch;
         for (int i = 0; i < len; i++) {
-            if (upperCase(bytes[i]) != upperCase((byte) str.charAt(i))) {
+            ch = str.charAt(i);
+            if (ch > 0xff || upperCase(bytes[i]) != upperCase((byte) ch)) {
                 return false;
             }
         }

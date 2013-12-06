@@ -129,7 +129,7 @@ public final class ChannelUpgradeHandler implements HttpHandler {
 
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
         final List<String> upgradeStrings = exchange.getRequestHeaders().get(Headers.UPGRADE);
-        if (upgradeStrings != null && exchange.getRequestMethod().equals(Methods.GET)) {
+        if (upgradeStrings != null && exchange.getRequestMethod().equalsIgnoreCase(Methods.GET)) {
             for (String string : upgradeStrings) {
                 final List<Holder> holders = handlers.get(string);
                 if (holders != null) {

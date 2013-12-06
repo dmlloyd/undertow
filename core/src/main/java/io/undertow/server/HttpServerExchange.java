@@ -295,7 +295,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      * @return {@code true} if the request protocol is equal to {@link Protocols#HTTP_0_9}, {@code false} otherwise
      */
     public boolean isHttp09() {
-        return protocol.equals(Protocols.HTTP_0_9);
+        return protocol.equalsIgnoreCase(Protocols.HTTP_0_9);
     }
 
     /**
@@ -304,7 +304,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      * @return {@code true} if the request protocol is equal to {@link Protocols#HTTP_1_0}, {@code false} otherwise
      */
     public boolean isHttp10() {
-        return protocol.equals(Protocols.HTTP_1_0);
+        return protocol.equalsIgnoreCase(Protocols.HTTP_1_0);
     }
 
     /**
@@ -313,7 +313,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      * @return {@code true} if the request protocol is equal to {@link Protocols#HTTP_1_1}, {@code false} otherwise
      */
     public boolean isHttp11() {
-        return protocol.equals(Protocols.HTTP_1_1);
+        return protocol.equalsIgnoreCase(Protocols.HTTP_1_1);
     }
 
     /**

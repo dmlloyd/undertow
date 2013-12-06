@@ -12,7 +12,7 @@ public class HttpStringTestCase {
     public void testOrderShorterFirst() {
         HttpString a =  new HttpString("a");
         HttpString aa =  new HttpString("aa");
-        Assert.assertEquals(-1, a.compareTo(aa));
+        Assert.assertEquals(-1, a.compareToIgnoreCase(aa));
     }
 
     /**
@@ -21,10 +21,10 @@ public class HttpStringTestCase {
     @Test
     public void testCompareShorterFirst() {
         HttpString accept =  new HttpString(Headers.ACCEPT_STRING);
-        Assert.assertEquals(accept.compareTo(Headers.ACCEPT_CHARSET), Headers.ACCEPT.compareTo(Headers.ACCEPT_CHARSET));
+        Assert.assertEquals(accept.compareToIgnoreCase(Headers.ACCEPT_CHARSET), Headers.ACCEPT.compareToIgnoreCase(Headers.ACCEPT_CHARSET));
 
         HttpString acceptCharset =  new HttpString(Headers.ACCEPT_CHARSET_STRING);
-        Assert.assertEquals(acceptCharset.compareTo(Headers.ACCEPT), Headers.ACCEPT_CHARSET.compareTo(Headers.ACCEPT));
+        Assert.assertEquals(acceptCharset.compareToIgnoreCase(Headers.ACCEPT), Headers.ACCEPT_CHARSET.compareToIgnoreCase(Headers.ACCEPT));
     }
 
     /**
@@ -33,10 +33,10 @@ public class HttpStringTestCase {
     @Test
     public void testCompare() {
         HttpString contentType =  new HttpString(Headers.CONTENT_TYPE_STRING);
-        Assert.assertEquals(contentType.compareTo(Headers.COOKIE), Headers.CONTENT_TYPE.compareTo(Headers.COOKIE));
+        Assert.assertEquals(contentType.compareToIgnoreCase(Headers.COOKIE), Headers.CONTENT_TYPE.compareToIgnoreCase(Headers.COOKIE));
 
         HttpString cookie =  new HttpString(Headers.COOKIE_STRING);
-        Assert.assertEquals(cookie.compareTo(Headers.CONTENT_TYPE), Headers.COOKIE.compareTo(Headers.CONTENT_TYPE));
+        Assert.assertEquals(cookie.compareToIgnoreCase(Headers.CONTENT_TYPE), Headers.COOKIE.compareToIgnoreCase(Headers.CONTENT_TYPE));
     }
 
 }

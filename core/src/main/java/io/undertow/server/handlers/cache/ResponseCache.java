@@ -85,8 +85,8 @@ public class ResponseCache {
         DirectBufferCache.CacheEntry entry = cache.get(key);
 
         //we only cache get and head requests
-        if (!exchange.getRequestMethod().equals(GET) &&
-                !exchange.getRequestMethod().equals(HEAD)) {
+        if (!exchange.getRequestMethod().equalsIgnoreCase(GET) &&
+                !exchange.getRequestMethod().equalsIgnoreCase(HEAD)) {
             return false;
         }
 
@@ -129,7 +129,7 @@ public class ResponseCache {
         if(existingKey.getContentType() != null) {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, existingKey.getContentType());
         }
-        if(existingKey.getContentEncoding() != null && !Headers.IDENTITY.equals(HttpString.tryFromString(existingKey.getContentEncoding()))) {
+        if(existingKey.getContentEncoding() != null && !Headers.IDENTITY.equalsIgnoreCase(HttpString.tryFromString(existingKey.getContentEncoding()))) {
             exchange.getResponseHeaders().put(Headers.CONTENT_ENCODING, existingKey.getContentEncoding());
         }
         if(existingKey.getLastModified() != null) {
@@ -147,7 +147,7 @@ public class ResponseCache {
 
         //TODO: support if-range
         exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, Long.toString(entry.size()));
-        if (exchange.getRequestMethod().equals(HEAD)) {
+        if (exchange.getRequestMethod().equalsIgnoreCase(HEAD)) {
             exchange.endExchange();
             return true;
         }

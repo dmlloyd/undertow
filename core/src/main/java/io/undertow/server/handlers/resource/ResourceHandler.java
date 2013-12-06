@@ -65,10 +65,10 @@ public class ResourceHandler implements HttpHandler {
 
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-        if (exchange.getRequestMethod().equals(Methods.GET) ||
-                exchange.getRequestMethod().equals(Methods.POST)) {
+        if (exchange.getRequestMethod().equalsIgnoreCase(Methods.GET) ||
+                exchange.getRequestMethod().equalsIgnoreCase(Methods.POST)) {
             serveResource(exchange, true);
-        } else if (exchange.getRequestMethod().equals(Methods.HEAD)) {
+        } else if (exchange.getRequestMethod().equalsIgnoreCase(Methods.HEAD)) {
             serveResource(exchange, false);
         } else {
             exchange.setResponseCode(405);

@@ -21,7 +21,7 @@ public class HttpTraceHandler implements HttpHandler {
 
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-        if(exchange.getRequestMethod().equals(Methods.TRACE)) {
+        if(exchange.getRequestMethod().equalsIgnoreCase(Methods.TRACE)) {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "message/http");
             StringBuilder body = new StringBuilder("TRACE ");
             body.append(exchange.getRequestURI());
