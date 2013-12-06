@@ -81,7 +81,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         HeaderValues headerValues;
         if (o instanceof HeaderValues) {
             headerValues = (HeaderValues) o;
-            if (! headerValues.key.equalToString(headerName)) {
+            if (! headerValues.key.equalToStringIgnoreCase(headerName)) {
                 return null;
             }
             return headerValues;
@@ -89,7 +89,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
             final HeaderValues[] row = (HeaderValues[]) o;
             for (int i = 0; i < row.length; i++) {
                 headerValues = row[i];
-                if (headerValues != null && headerValues.key.equalToString(headerName)) { return headerValues; }
+                if (headerValues != null && headerValues.key.equalToStringIgnoreCase(headerName)) { return headerValues; }
             }
             return null;
         }
@@ -144,7 +144,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
         HeaderValues headerValues;
         if (o instanceof HeaderValues) {
             headerValues = (HeaderValues) o;
-            if (! headerValues.key.equalToString(headerName)) {
+            if (! headerValues.key.equalToStringIgnoreCase(headerName)) {
                 return null;
             }
             table[idx] = null;
@@ -154,7 +154,7 @@ public final class HeaderMap implements Iterable<HeaderValues> {
             final HeaderValues[] row = (HeaderValues[]) o;
             for (int i = 0; i < row.length; i++) {
                 headerValues = row[i];
-                if (headerValues != null && headerValues.key.equalToString(headerName)) {
+                if (headerValues != null && headerValues.key.equalToStringIgnoreCase(headerName)) {
                     row[i] = null;
                     size --;
                     return headerValues;

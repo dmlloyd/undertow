@@ -276,7 +276,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
         int hashCode = this.hashCode;
         if (hashCode == 0) {
             final byte[] bytes = this.bytes;
-            hashCode = this.hashCode = bytes != null ? calcHashCode(bytes) : hashCodeOf(string);
+            hashCode = this.hashCode = bytes != null ? calcHashCodeIgnoreCase(bytes) : hashCodeOf(string);
         }
         return hashCode;
     }
@@ -332,7 +332,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
         }
     }
 
-    private static int calcHashCode(final byte[] bytes) {
+    private static int calcHashCodeIgnoreCase(final byte[] bytes) {
         int hc = 17;
         for (byte b : bytes) {
             hc = (hc << 4) + hc + upperCase(b);
@@ -389,7 +389,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
         return hc;
     }
 
-    public boolean equalToString(String headerName) {
+    public boolean equalToStringIgnoreCase(String headerName) {
         final String string = this.string;
         if (string != null) {
             return headerName.equalsIgnoreCase(string);

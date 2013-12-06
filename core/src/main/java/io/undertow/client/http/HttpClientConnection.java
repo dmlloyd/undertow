@@ -461,7 +461,7 @@ public class HttpClientConnection extends AbstractAttachable implements Closeabl
 
                 //check if an upgrade worked
                 if (anyAreSet(HttpClientConnection.this.state, UPGRADE_REQUESTED)) {
-                    if ((connectionString == null || !UPGRADE.equalToString(connectionString)) && !response.getResponseHeaders().contains(UPGRADE)) {
+                    if ((connectionString == null || !UPGRADE.equalToStringIgnoreCase(connectionString)) && !response.getResponseHeaders().contains(UPGRADE)) {
                         //just unset the upgrade requested flag
                         HttpClientConnection.this.state &= ~UPGRADE_REQUESTED;
                     }

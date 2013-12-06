@@ -214,7 +214,7 @@ class AjpClientConnection extends AbstractAttachable implements Closeable, Clien
 
         String connectionString = request.getRequestHeaders().getFirst(CONNECTION);
         if (connectionString != null) {
-            if (CLOSE.equalToString(connectionString)) {
+            if (CLOSE.equalToStringIgnoreCase(connectionString)) {
                 state |= CLOSE_REQ;
             }
         } else if (request.getProtocol() != Protocols.HTTP_1_1) {
@@ -452,7 +452,7 @@ class AjpClientConnection extends AbstractAttachable implements Closeable, Clien
                 //check if an updated worked
                 if (anyAreSet(AjpClientConnection.this.state, UPGRADE_REQUESTED)) {
                     String connectionString = response.getResponseHeaders().getFirst(CONNECTION);
-                    if (connectionString == null || !UPGRADE.equalToString(connectionString)) {
+                    if (connectionString == null || !UPGRADE.equalToStringIgnoreCase(connectionString)) {
                         //just unset the upgrade requested flag
                         AjpClientConnection.this.state &= ~UPGRADE_REQUESTED;
                     }
