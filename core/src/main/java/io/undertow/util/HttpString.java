@@ -35,6 +35,18 @@ import static java.util.Arrays.copyOfRange;
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 public final class HttpString implements Comparable<HttpString>, Serializable {
+    private static final byte[] hi;
+
+    static {
+        final byte[] bytes = new byte[128];
+        int up;
+        for (int i = 128; i < 256; i ++) {
+            up = Character.toUpperCase(i);
+            bytes[i - 128] = (byte) (up > 256 ? i : up);
+        }
+        hi = bytes;
+    }
+
     private byte[] bytes;
     private transient int hashCode;
     private transient String string;
@@ -341,7 +353,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
     }
 
     private static int upperCase(byte b) {
-        return b >= 'a' && b <= 'z' ? b & 0xDF : b;
+        return b >= 'a' && b <= 'z' ? b & 0xDF : b < 0 ? hi[b & 0x7f] : b;
     }
 
     private static boolean arrayEqualIgnoreCase(final byte[] a, final byte[] b) {
