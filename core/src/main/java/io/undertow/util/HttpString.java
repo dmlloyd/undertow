@@ -389,19 +389,25 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
         return hc;
     }
 
-    public boolean equalToStringIgnoreCase(String headerName) {
+    /**
+     * Determine whether this {@code HttpString} is equal (case-insensitively) to the given {@code String}.
+     *
+     * @param str the string to check
+     * @return {@code true} if the given string is equal (case-insensitively) to this instance, {@code false} otherwise
+     */
+    public boolean equalToStringIgnoreCase(String str) {
         final String string = this.string;
         if (string != null) {
-            return headerName.equalsIgnoreCase(string);
+            return str.equalsIgnoreCase(string);
         }
         final byte[] bytes = this.bytes;
         final int length = bytes.length;
-        if (headerName.length() != length) {
+        if (str.length() != length) {
             return false;
         }
         final int len = length;
         for (int i = 0; i < len; i++) {
-            if (upperCase(bytes[i]) != upperCase((byte) headerName.charAt(i))) {
+            if (upperCase(bytes[i]) != upperCase((byte) str.charAt(i))) {
                 return false;
             }
         }
