@@ -143,7 +143,7 @@ final class HttpResponseConduit extends AbstractStreamSinkConduit<StreamSinkCond
         Connectors.flattenCookies(exchange);
 
         if(pooledBuffer == null) {
-            pooledBuffer = pool.allocate();
+            pooledBuffer = this.pooledBuffer = pool.allocate();
         }
         ByteBuffer buffer = pooledBuffer.getResource();
 
