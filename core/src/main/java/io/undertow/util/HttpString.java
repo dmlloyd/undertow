@@ -131,23 +131,27 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
         this(string, false);
     }
 
-    @SuppressWarnings("deprecation")
     HttpString(final String string, final boolean trust) {
         final int len = string.length();
         final byte[] bytes = new byte[len];
+        getStringBytes(trust, bytes, 0, string, 0, len);
+        this.string = string;
+        this.bytes = bytes;
+    }
+
+    @SuppressWarnings("deprecation")
+    private static void getStringBytes(final boolean trust, final byte[] dst, final int dstOffs, final String src, final int srcOffs, final int len) {
         if (trust) {
-            string.getBytes(0, len, bytes, 0);
+            src.getBytes(srcOffs, srcOffs + len, dst, dstOffs);
         } else {
-            for (int i = 0; i < len; i++) {
-                char c = string.charAt(i);
+            for (int i = srcOffs; i < len; i++) {
+                char c = src.charAt(i);
                 if (c > 0xff) {
                     throw new IllegalArgumentException("Invalid string contents");
                 }
-                bytes[i] = (byte) c;
+                dst[i + dstOffs] = (byte) c;
             }
         }
-        this.string = string;
-        this.bytes = bytes;
     }
 
     private HttpString(final byte[] bytes, final String string) {
@@ -1271,12 +1275,24 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
         return regionMatches(false, 0, prefix, 0, prefix.length());
     }
 
+    public boolean startsWith(char prefix) {
+        final byte[] bytes = this.bytes;
+        final int length = bytes.length;
+        return prefix <= 0xff && length > 0 && bytes[0] == (byte) prefix;
+    }
+
     public boolean startsWithIgnoreCase(HttpString prefix) {
         return regionMatches(true, 0, prefix, 0, prefix.length());
     }
 
     public boolean startsWithIgnoreCase(String prefix) {
         return regionMatches(true, 0, prefix, 0, prefix.length());
+    }
+
+    public boolean startsWithIgnoreCase(char prefix) {
+        final byte[] bytes = this.bytes;
+        final int length = bytes.length;
+        return prefix <= 0xff && length > 0 && upperCase(bytes[0]) == upperCase((byte) prefix);
     }
 
     public boolean endsWith(HttpString suffix) {
@@ -1289,6 +1305,12 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
         return regionMatches(false, bytes.length - suffixLength, suffix, 0, suffixLength);
     }
 
+    public boolean endsWith(char suffix) {
+        final byte[] bytes = this.bytes;
+        final int length = bytes.length;
+        return suffix <= 0xff && length > 0 && bytes[length - 1] == (byte) suffix;
+    }
+
     public boolean endsWithIgnoreCase(HttpString suffix) {
         final int suffixLength = suffix.length();
         return regionMatches(true, bytes.length - suffixLength, suffix, 0, suffixLength);
@@ -1297,6 +1319,46 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
     public boolean endsWithIgnoreCase(String suffix) {
         final int suffixLength = suffix.length();
         return regionMatches(true, bytes.length - suffixLength, suffix, 0, suffixLength);
+    }
+
+    public boolean endsWithIgnoreCase(char suffix) {
+        final byte[] bytes = this.bytes;
+        final int length = bytes.length;
+        return suffix <= 0xff && length > 0 && upperCase(bytes[length - 1]) == upperCase((byte) suffix);
+    }
+
+    public HttpString concat(byte[] suffixBytes) {
+        return concat(suffixBytes, 0, suffixBytes.length);
+    }
+
+    public HttpString concat(byte[] suffixBytes, int offs, int len) {
+        if (len <= 0) { return this; }
+        final byte[] bytes = this.bytes;
+        final int length = bytes.length;
+        byte[] newBytes = Arrays.copyOf(bytes, length + len);
+        System.arraycopy(suffixBytes, offs, newBytes, length, len);
+        return new HttpString(newBytes, null);
+    }
+
+    public HttpString concat(HttpString suffix) {
+        return concat(suffix.bytes);
+    }
+
+    public HttpString concat(HttpString suffix, int offs, int len) {
+        return concat(suffix.bytes, offs, len);
+    }
+
+    public HttpString concat(String suffix) {
+        return concat(suffix, 0, suffix.length());
+    }
+
+    public HttpString concat(String suffix, int offs, int len) {
+        if (len <= 0) { return this; }
+        final byte[] bytes = this.bytes;
+        final int length = bytes.length;
+        byte[] newBytes = Arrays.copyOf(bytes, length + len);
+        getStringBytes(false, newBytes, length, suffix, offs, len);
+        return new HttpString(newBytes, null);
     }
 
     public char charAt(final int index) {
