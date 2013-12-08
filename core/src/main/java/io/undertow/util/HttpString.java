@@ -27,6 +27,7 @@ import java.util.Comparator;
 
 import static java.lang.Integer.signum;
 import static java.lang.Math.abs;
+import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.System.arraycopy;
 import static java.util.Arrays.copyOfRange;
@@ -36,7 +37,7 @@ import static java.util.Arrays.copyOfRange;
  *
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
-public final class HttpString implements Comparable<HttpString>, Serializable {
+public final class HttpString implements Comparable<HttpString>, Serializable, CharSequence {
 
     /**
      * A case-sensitive comparator for {@code HttpString}s.
@@ -383,7 +384,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
     public boolean equalsIgnoreCase(final HttpString other) {
         if (other == this) return true;
         if (other == null) return false;
-        return arrayEqualIgnoreCase(bytes, other.bytes);
+        return arrayEqualsIgnoreCase(bytes, other.bytes);
     }
 
     private static int calcHashCode(final byte[] bytes) {
@@ -406,7 +407,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
         return b >= 'a' && b <= 'z' ? b & 0xDF : b < 0 ? hi[b & 0x7f] : b;
     }
 
-    private static boolean arrayEqualIgnoreCase(final byte[] a, final byte[] b) {
+    private static boolean arrayEqualsIgnoreCase(final byte[] a, final byte[] b) {
         final int len = a.length;
         if (len != b.length) return false;
         for (int i = 0; i < len; i++) {
@@ -416,6 +417,28 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
         }
         return true;
     }
+
+    private static boolean arrayEqualsIgnoreCase(final byte[] a, final int ao, final byte[] b, final int bo, final int len) {
+        int ax, bx;
+        for (int i = 0; i < len; i++) {
+            ax = i + ao;
+            bx = i + bo;
+            if (a[ax] != b[bx] && upperCase(a[ax]) != upperCase(b[bx])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean arrayEquals(final byte[] a, final int ao, final byte[] b, final int bo, final int len) {
+        for (int i = 0; i < len; i++) {
+            if (a[i + ao] != b[i + bo]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 
     /**
      * Get the {@code String} representation of this {@code HttpString}.
@@ -711,12 +734,23 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
      * @return the index, or -1 if it was not found
      */
     public int indexOf(final char c) {
+        return indexOf(c, 0);
+    }
+
+    /**
+     * Get the index of the given character in this string.
+     *
+     * @param c the character
+     * @return the index, or -1 if it was not found
+     */
+    public int indexOf(final char c, int start) {
         if (c > 255) {
             return -1;
         }
+        start = max(0, start);
         final byte[] bytes = this.bytes;
         final byte bc = (byte) c;
-        for (int i = 0, bytesLength = bytes.length; i < bytesLength; i++) {
+        for (int i = start, bytesLength = bytes.length; i < bytesLength; i++) {
             if (bytes[i] == bc) {
                 return i;
             }
@@ -724,23 +758,111 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
         return -1;
     }
 
-    private static boolean arrayContains(byte[] a, byte[] b) {
-        final int aLen = a.length;
-        final int bLen = b.length;
-        if (bLen > aLen) {
-            return false;
+    /**
+     * Get the last index of the given character in this string.
+     *
+     * @param c the character
+     * @return the index, or -1 if it was not found
+     */
+    public int lastIndexOf(final char c) {
+        return lastIndexOf(c, length() - 1);
+    }
+
+    /**
+     * Get the last index of the given character in this string.
+     *
+     * @param c the character
+     * @return the index, or -1 if it was not found
+     */
+    public int lastIndexOf(final char c, int start) {
+        if (c > 255) {
+            return -1;
         }
-        OUTER: for (int i = 0; i < aLen - bLen; i ++) {
-            if (a[i] == b[0]) {
+        final byte[] bytes = this.bytes;
+        start = min(start, bytes.length - 1);
+        final byte bc = (byte) c;
+        for (int i = start; i >= 0; --i) {
+            if (bytes[i] == bc) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int arrayIndexOf(byte[] a, int aOffs, byte[] b, int bOffs, int bLen) {
+        final int aLen = a.length;
+        if (bLen > aLen) {
+            return -1;
+        }
+        aOffs = max(0, aOffs);
+        OUTER: for (int i = aOffs; i < aLen - bLen; i ++) {
+            if (a[i] == b[bOffs]) {
                 for (int j = 0; j < bLen; j ++) {
-                    if (a[i + j] != b[j]) {
+                    if (a[i + j] != b[j + bOffs]) {
                         continue OUTER;
                     }
-                    return true;
+                    return i;
                 }
             }
         }
-        return false;
+        return -1;
+    }
+
+    private static int arrayIndexOfIgnoreCase(byte[] a, int aOffs, byte[] b, int bOffs, int bLen) {
+        final int aLen = a.length;
+        if (bLen > aLen) {
+            return -1;
+        }
+        aOffs = max(0, aOffs);
+        OUTER: for (int i = aOffs; i < aLen - bLen; i ++) {
+            if (upperCase(a[i]) == upperCase(b[bOffs])) {
+                for (int j = 0; j < bLen; j ++) {
+                    if (upperCase(a[i + j]) != upperCase(b[j + bOffs])) {
+                        continue OUTER;
+                    }
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private static int arrayLastIndexOf(byte[] a, int aOffs, byte[] b, final int bOffs, final int bLen) {
+        final int aLen = a.length;
+        if (bLen > aLen) {
+            return -1;
+        }
+        aOffs = min(aLen, aOffs);
+        OUTER: for (int i = aOffs; i >= 0; -- i) {
+            if (a[i] == b[bOffs]) {
+                for (int j = 0; j < bLen; j ++) {
+                    if (a[i + j] != b[j + bOffs]) {
+                        continue OUTER;
+                    }
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private static int arrayLastIndexOfIgnoreCase(byte[] a, int aOffs, byte[] b, final int bOffs, final int bLen) {
+        final int aLen = a.length;
+        if (bLen > aLen) {
+            return -1;
+        }
+        aOffs = min(aLen, aOffs);
+        OUTER: for (int i = aOffs; i >= 0; -- i) {
+            if (upperCase(a[i]) == upperCase(b[bOffs])) {
+                for (int j = 0; j < bLen; j ++) {
+                    if (upperCase(a[i + j]) != upperCase(b[j + bOffs])) {
+                        continue OUTER;
+                    }
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
 
     /**
@@ -752,6 +874,113 @@ public final class HttpString implements Comparable<HttpString>, Serializable {
     public boolean contains(final HttpString other) {
         if (other == this) return true;
         if (other == null) return false;
-        return arrayContains(bytes, other.bytes);
+        final byte[] otherBytes = other.bytes;
+        return arrayIndexOf(bytes, 0, otherBytes, 0, otherBytes.length) != -1;
+    }
+
+    /**
+     * Determine whether this string contains another string (case-sensitive).
+     *
+     * @param other the string to test
+     * @return {@code true} if this string contains {@code other}, {@code false} otherwise
+     */
+    public boolean contains(final String other) {
+        if (other == null) return false;
+        return toString().contains(other);
+    }
+
+    /**
+     * Determine whether this string contains another string (case-insensitive).
+     *
+     * @param other the string to test
+     * @return {@code true} if this string contains {@code other}, {@code false} otherwise
+     */
+    public boolean containsIgnoreCase(final HttpString other) {
+        if (other == this) return true;
+        if (other == null) return false;
+        final byte[] otherBytes = other.bytes;
+        return arrayIndexOfIgnoreCase(bytes, 0, otherBytes, 0, otherBytes.length) != -1;
+    }
+
+    /**
+     * Determine whether this string contains another string (case-sensitive).
+     *
+     * @param other the string to test
+     * @return {@code true} if this string contains {@code other}, {@code false} otherwise
+     */
+    public boolean containsIgnoreCase(final String other) {
+        // todo - we can surely optimize this
+        return containsIgnoreCase(HttpString.fromString(other));
+    }
+
+    public int indexOf(final HttpString other) {
+        final byte[] otherBytes = other.bytes;
+        return arrayIndexOf(bytes, 0, otherBytes, 0, otherBytes.length);
+    }
+
+    public int indexOf(final HttpString other, int start) {
+        final byte[] otherBytes = other.bytes;
+        return arrayIndexOf(bytes, start, otherBytes, 0, otherBytes.length);
+    }
+
+    public int indexOf(final String other) {
+        return toString().indexOf(other);
+    }
+
+    public int indexOf(final String other, int start) {
+        return toString().indexOf(other, start);
+    }
+
+    public int lastIndexOf(final HttpString other) {
+        final byte[] otherBytes = other.bytes;
+        return arrayLastIndexOf(bytes, 0, otherBytes, 0, otherBytes.length);
+    }
+
+    public int lastIndexOf(final HttpString other, int start) {
+        final byte[] otherBytes = other.bytes;
+        return arrayLastIndexOf(bytes, start, otherBytes, 0, otherBytes.length);
+    }
+
+    public int lastIndexOf(final String other) {
+        return toString().lastIndexOf(other);
+    }
+
+    public int lastIndexOf(final String other, int start) {
+        return toString().lastIndexOf(other, start);
+    }
+
+    public boolean regionMatches(boolean ignoreCase, int offset, byte[] other, int ooffs, int len) {
+        if (offset < 0 || ooffs < 0 || offset + len > bytes.length || ooffs + len > other.length) {
+            return false;
+        }
+        if (ignoreCase) {
+            return arrayEqualsIgnoreCase(bytes, offset, other, ooffs, len);
+        } else {
+            return arrayEquals(bytes, offset, other, ooffs, len);
+        }
+    }
+
+    public boolean regionMatches(boolean ignoreCase, int offset, HttpString other, int ooffs, int len) {
+        final byte[] otherBytes = other.bytes;
+        if (offset < 0 || ooffs < 0 || offset + len > bytes.length || ooffs + len > otherBytes.length) {
+            return false;
+        }
+        if (ignoreCase) {
+            return arrayEqualsIgnoreCase(bytes, offset, otherBytes, ooffs, len);
+        } else {
+            return arrayEquals(bytes, offset, otherBytes, ooffs, len);
+        }
+    }
+
+    public boolean regionMatches(boolean ignoreCase, int offset, String other, int ooffs, int len) {
+        return toString().regionMatches(ignoreCase, offset, other, ooffs, len);
+    }
+
+    public char charAt(final int index) {
+        return (char) (byteAt(index) & 0xff);
+    }
+
+    public HttpString subSequence(final int start, final int end) {
+        return substring(start, end);
     }
 }
