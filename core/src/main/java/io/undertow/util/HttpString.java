@@ -1263,6 +1263,42 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
         }
     }
 
+    public boolean startsWith(HttpString prefix) {
+        return regionMatches(false, 0, prefix, 0, prefix.length());
+    }
+
+    public boolean startsWith(String prefix) {
+        return regionMatches(false, 0, prefix, 0, prefix.length());
+    }
+
+    public boolean startsWithIgnoreCase(HttpString prefix) {
+        return regionMatches(true, 0, prefix, 0, prefix.length());
+    }
+
+    public boolean startsWithIgnoreCase(String prefix) {
+        return regionMatches(true, 0, prefix, 0, prefix.length());
+    }
+
+    public boolean endsWith(HttpString suffix) {
+        final int suffixLength = suffix.length();
+        return regionMatches(false, bytes.length - suffixLength, suffix, 0, suffixLength);
+    }
+
+    public boolean endsWith(String suffix) {
+        final int suffixLength = suffix.length();
+        return regionMatches(false, bytes.length - suffixLength, suffix, 0, suffixLength);
+    }
+
+    public boolean endsWithIgnoreCase(HttpString suffix) {
+        final int suffixLength = suffix.length();
+        return regionMatches(true, bytes.length - suffixLength, suffix, 0, suffixLength);
+    }
+
+    public boolean endsWithIgnoreCase(String suffix) {
+        final int suffixLength = suffix.length();
+        return regionMatches(true, bytes.length - suffixLength, suffix, 0, suffixLength);
+    }
+
     public char charAt(final int index) {
         return (char) (bytes[index] & 0xff);
     }
