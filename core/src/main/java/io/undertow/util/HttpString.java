@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -62,11 +63,11 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
     private static final byte[] hi;
 
     static {
-        final byte[] bytes = new byte[128];
+        final byte[] bytes = new byte[256];
         int up;
-        for (int i = 128; i < 256; i ++) {
+        for (int i = 0; i < 256; i ++) {
             up = Character.toUpperCase(i);
-            bytes[i - 128] = (byte) (up > 256 ? i : up);
+            bytes[i] = (byte) (up > 256 ? i : up);
         }
         hi = bytes;
     }
@@ -111,20 +112,39 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
     }
 
     /**
+     * Construct a new instance by reading the given number of bytes from a buffer.
+     *
+     * @param buffer the buffer to read
+     * @param length the number of bytes to read
+     */
+    public HttpString(final ByteBuffer buffer, final int length) {
+        this(take(buffer, length), null);
+    }
+
+    /**
      * Construct a new instance from a {@code String}.  The {@code String} will be used
      * as the cached {@code toString()} value for this {@code HttpString}.
      *
      * @param string the source string
      */
     public HttpString(final String string) {
+        this(string, false);
+    }
+
+    @SuppressWarnings("deprecation")
+    HttpString(final String string, final boolean trust) {
         final int len = string.length();
         final byte[] bytes = new byte[len];
-        for (int i = 0; i < len; i++) {
-            char c = string.charAt(i);
-            if (c > 0xff) {
-                throw new IllegalArgumentException("Invalid string contents");
+        if (trust) {
+            string.getBytes(0, len, bytes, 0);
+        } else {
+            for (int i = 0; i < len; i++) {
+                char c = string.charAt(i);
+                if (c > 0xff) {
+                    throw new IllegalArgumentException("Invalid string contents");
+                }
+                bytes[i] = (byte) c;
             }
-            bytes[i] = (byte) c;
         }
         this.string = string;
         this.bytes = bytes;
@@ -271,6 +291,22 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
         }
     }
 
+    private static byte[] take(final ByteBuffer buffer, int length) {
+        if (buffer.hasArray()) {
+            // avoid useless array clearing
+            final int start = buffer.position();
+            try {
+                return copyOfRange(buffer.array(), buffer.arrayOffset() + start, length);
+            } finally {
+                buffer.position(start + length);
+            }
+        } else {
+            final byte[] bytes = new byte[length];
+            buffer.get(bytes);
+            return bytes;
+        }
+    }
+
     /**
      * Compare this string to another in a case-sensitive manner.
      *
@@ -404,7 +440,8 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
     }
 
     private static int upperCase(byte b) {
-        return b >= 'a' && b <= 'z' ? b & 0xDF : b < 0 ? hi[b & 0x7f] : b;
+        // avoid cache miss for common case... hopefully
+        return b >= 'a' && b <= 'z' ? b & 0xDF : b < 0 ? hi[b & 0xff] : b;
     }
 
     private static boolean arrayEqualsIgnoreCase(final byte[] a, final byte[] b) {
@@ -419,16 +456,15 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
     }
 
     private static boolean arrayEqualsIgnoreCase(final byte[] a, final int ao, final byte[] b, final int bo, final int len) {
-        int ax, bx;
         for (int i = 0; i < len; i++) {
-            ax = i + ao;
-            bx = i + bo;
-            if (a[ax] != b[bx] && upperCase(a[ax]) != upperCase(b[bx])) {
+            if (upperCase(a[i + ao]) != upperCase(b[i + bo])) {
                 return false;
             }
         }
         return true;
     }
+
+    // private static boolean arrayEquals(final byte[] a, final byte[] b) == Arrays.equals()
 
     private static boolean arrayEquals(final byte[] a, final int ao, final byte[] b, final int bo, final int len) {
         for (int i = 0; i < len; i++) {
@@ -439,6 +475,33 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
         return true;
     }
 
+    private static boolean arrayEqualsIgnoreCase(final byte[] a, int aOffs, String string, int stringOffset, int length) {
+        char ch;
+        for (int i = 0; i < length; i ++) {
+            ch = string.charAt(i + stringOffset);
+            if (ch > 0xff) {
+                return false;
+            }
+            if (a[i + aOffs] != (byte) ch) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean arrayEquals(final byte[] a, int aOffs, String string, int stringOffset, int length) {
+        char ch;
+        for (int i = 0; i < length; i ++) {
+            ch = string.charAt(i + stringOffset);
+            if (ch > 0xff) {
+                return false;
+            }
+            if (upperCase(a[i + aOffs]) != upperCase((byte) ch)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     /**
      * Get the {@code String} representation of this {@code HttpString}.
@@ -685,12 +748,12 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
         }
         final byte[] bytes = this.bytes;
         final int length = bytes.length;
+        final int offset = 0;
         if (str.length() != length) {
             return false;
         }
-        final int len = length;
         char ch;
-        for (int i = 0; i < len; i++) {
+        for (int i = offset; i < length; i++) {
             ch = str.charAt(i);
             if (ch > 0xff || bytes[i] != (byte) str.charAt(i)) {
                 return false;
@@ -716,9 +779,8 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
         if (str.length() != length) {
             return false;
         }
-        final int len = length;
         char ch;
-        for (int i = 0; i < len; i++) {
+        for (int i = 0; i < length; i++) {
             ch = str.charAt(i);
             if (ch > 0xff || upperCase(bytes[i]) != upperCase((byte) ch)) {
                 return false;
@@ -789,35 +851,139 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
         return -1;
     }
 
+    // Linear array searches
+
     private static int arrayIndexOf(byte[] a, int aOffs, byte[] b, int bOffs, int bLen) {
-        final int aLen = a.length;
-        if (bLen > aLen) {
+        final int aLen = a.length - aOffs;
+        if (bLen > aLen || aLen < 0) {
             return -1;
         }
         aOffs = max(0, aOffs);
-        OUTER: for (int i = aOffs; i < aLen - bLen; i ++) {
-            if (a[i] == b[bOffs]) {
-                for (int j = 0; j < bLen; j ++) {
+        if (bLen == 0) {
+            return aOffs;
+        }
+        final byte startByte = b[bOffs];
+        final int limit = aLen - bLen;
+        OUTER: for (int i = aOffs; i < limit; i ++) {
+            if (a[i] == startByte) {
+                for (int j = 1; j < bLen; j ++) {
                     if (a[i + j] != b[j + bOffs]) {
                         continue OUTER;
                     }
-                    return i;
                 }
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int arrayIndexOf(byte[] a, int aOffs, String string) {
+        final int aLen = a.length - aOffs;
+        final int bLen = string.length();
+        if (bLen > aLen || aLen < 0) {
+            return -1;
+        }
+        aOffs = max(0, aOffs);
+        if (bLen == 0) {
+            return aOffs;
+        }
+        final char startChar = string.charAt(0);
+        if (startChar > 0xff) {
+            return -1;
+        }
+        char ch;
+        final int limit = aLen - bLen;
+        OUTER: for (int i = aOffs; i < limit; i ++) {
+            if (a[i] == startChar) {
+                for (int j = 1; j < bLen; j ++) {
+                    ch = string.charAt(j);
+                    if (ch > 0xff) {
+                        return -1;
+                    }
+                    if (a[i + j] != ch) {
+                        continue OUTER;
+                    }
+                }
+                return i;
             }
         }
         return -1;
     }
 
     private static int arrayIndexOfIgnoreCase(byte[] a, int aOffs, byte[] b, int bOffs, int bLen) {
-        final int aLen = a.length;
-        if (bLen > aLen) {
+        final int aLen = a.length - aOffs;
+        if (bLen > aLen || aLen < 0) {
             return -1;
         }
         aOffs = max(0, aOffs);
-        OUTER: for (int i = aOffs; i < aLen - bLen; i ++) {
-            if (upperCase(a[i]) == upperCase(b[bOffs])) {
-                for (int j = 0; j < bLen; j ++) {
+        if (bLen == 0) {
+            return aOffs;
+        }
+        final int startChar = upperCase(b[bOffs]);
+        final int limit = aLen - bLen;
+        OUTER: for (int i = aOffs; i < limit; i ++) {
+            if (upperCase(a[i]) == startChar) {
+                for (int j = 1; j < bLen; j ++) {
                     if (upperCase(a[i + j]) != upperCase(b[j + bOffs])) {
+                        continue OUTER;
+                    }
+                }
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int arrayIndexOfIgnoreCase(byte[] a, int aOffs, String string) {
+        final int aLen = a.length - aOffs;
+        final int bLen = string.length();
+        if (bLen > aLen || aLen < 0) {
+            return -1;
+        }
+        aOffs = max(0, aOffs);
+        if (bLen == 0) {
+            return aOffs;
+        }
+        final char startChar = string.charAt(0);
+        if (startChar > 0xff) {
+            return -1;
+        }
+        final int startCP = upperCase((byte) startChar);
+        final int limit = aLen - bLen;
+        char ch;
+        OUTER: for (int i = aOffs; i < limit; i ++) {
+            if (upperCase(a[i]) == startCP) {
+                for (int j = 1; j < bLen; j ++) {
+                    ch = string.charAt(j);
+                    if (ch > 0xff) {
+                        return -1;
+                    }
+                    // technically speaking, 'ı' (0x131) maps to I and 'ſ' (0x17F) maps to S, but this is unlikely to come up in ISO-8859-1
+                    if (upperCase(a[i + j]) != upperCase((byte) ch)) {
+                        continue OUTER;
+                    }
+                }
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int arrayLastIndexOf(byte[] a, int aOffs, byte[] b, final int bOffs, final int bLen) {
+        final int aLen = a.length - aOffs;
+        if (bLen > aLen || aLen < 0 || aOffs < 0) {
+            return -1;
+        }
+        // move to the last possible position it could be
+        aOffs = min(aLen - bLen, aOffs);
+        if (bLen == 0) {
+            return aOffs;
+        }
+        final byte startByte = b[0];
+        OUTER: for (int i = aOffs - 1; i >= 0; i --) {
+            if (a[i] == startByte) {
+                for (int j = 1; j < bLen; j++) {
+                    if (a[i + j] != b[bOffs + j]) {
                         continue OUTER;
                     }
                     return i;
@@ -827,16 +993,31 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
         return -1;
     }
 
-    private static int arrayLastIndexOf(byte[] a, int aOffs, byte[] b, final int bOffs, final int bLen) {
-        final int aLen = a.length;
-        if (bLen > aLen) {
+    private static int arrayLastIndexOf(byte[] a, int aOffs, String string) {
+        final int aLen = a.length - aOffs;
+        final int bLen = string.length();
+        if (bLen > aLen || aLen < 0 || aOffs < 0) {
             return -1;
         }
-        aOffs = min(aLen, aOffs);
-        OUTER: for (int i = aOffs; i >= 0; -- i) {
-            if (a[i] == b[bOffs]) {
-                for (int j = 0; j < bLen; j ++) {
-                    if (a[i + j] != b[j + bOffs]) {
+        // move to the last possible position it could be
+        aOffs = min(aLen - bLen, aOffs);
+        if (bLen == 0) {
+            return aOffs;
+        }
+        final char startChar = string.charAt(0);
+        if (startChar > 0xff) {
+            return -1;
+        }
+        final byte startByte = (byte) startChar;
+        char ch;
+        OUTER: for (int i = aOffs - 1; i >= 0; i --) {
+            if (a[i] == startByte) {
+                for (int j = 1; j < bLen; j++) {
+                    ch = string.charAt(j);
+                    if (ch > 0xff) {
+                        return -1;
+                    }
+                    if (a[i + j] != (byte) ch) {
                         continue OUTER;
                     }
                     return i;
@@ -847,15 +1028,55 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
     }
 
     private static int arrayLastIndexOfIgnoreCase(byte[] a, int aOffs, byte[] b, final int bOffs, final int bLen) {
-        final int aLen = a.length;
-        if (bLen > aLen) {
+        final int aLen = a.length - aOffs;
+        if (bLen > aLen || aLen < 0 || aOffs < 0) {
             return -1;
         }
-        aOffs = min(aLen, aOffs);
-        OUTER: for (int i = aOffs; i >= 0; -- i) {
-            if (upperCase(a[i]) == upperCase(b[bOffs])) {
-                for (int j = 0; j < bLen; j ++) {
+        // move to the last possible position it could be
+        aOffs = min(aLen - bLen, aOffs);
+        if (bLen == 0) {
+            return aOffs;
+        }
+        final int startCP = upperCase(b[bOffs]);
+        OUTER: for (int i = aOffs - 1; i >= 0; i --) {
+            if (upperCase(a[i]) == startCP) {
+                for (int j = 1; j < bLen; j++) {
                     if (upperCase(a[i + j]) != upperCase(b[j + bOffs])) {
+                        continue OUTER;
+                    }
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private static int arrayLastIndexOfIgnoreCase(byte[] a, int aOffs, String string) {
+        final int aLen = a.length - aOffs;
+        final int bLen = string.length();
+        if (bLen > aLen || aLen < 0 || aOffs < 0) {
+            return -1;
+        }
+        // move to the last possible position it could be
+        aOffs = min(aLen - bLen, aOffs);
+        if (bLen == 0) {
+            return aOffs;
+        }
+        final char startChar = string.charAt(0);
+        if (startChar > 0xff) {
+            return -1;
+        }
+        final int startCP = upperCase((byte) startChar);
+        char ch;
+        OUTER: for (int i = aOffs - 1; i >= 0; i --) {
+            if (upperCase(a[i]) == startCP) {
+                for (int j = 1; j < bLen; j++) {
+                    ch = string.charAt(j);
+                    if (ch > 0xff) {
+                        return -1;
+                    }
+                    // technically speaking, 'ı' (0x131) maps to I and 'ſ' (0x17F) maps to S, but this is unlikely to come up in ISO-8859-1
+                    if (upperCase(a[i + j]) != upperCase((byte) ch)) {
                         continue OUTER;
                     }
                     return i;
@@ -909,8 +1130,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
      * @return {@code true} if this string contains {@code other}, {@code false} otherwise
      */
     public boolean containsIgnoreCase(final String other) {
-        // todo - we can surely optimize this
-        return containsIgnoreCase(HttpString.fromString(other));
+        return arrayIndexOfIgnoreCase(bytes, 0, other) != -1;
     }
 
     public int indexOf(final HttpString other) {
@@ -924,11 +1144,39 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
     }
 
     public int indexOf(final String other) {
-        return toString().indexOf(other);
+        final String string = this.string;
+        if (string != null) {
+            return string.indexOf(other);
+        } else {
+            return arrayIndexOf(bytes, 0, other);
+        }
     }
 
     public int indexOf(final String other, int start) {
-        return toString().indexOf(other, start);
+        final String string = this.string;
+        if (string != null) {
+            return string.indexOf(other, start);
+        } else {
+            return arrayIndexOf(bytes, start, other);
+        }
+    }
+
+    public int indexOfIgnoreCase(final HttpString other) {
+        final byte[] otherBytes = other.bytes;
+        return arrayIndexOfIgnoreCase(bytes, 0, otherBytes, 0, otherBytes.length);
+    }
+
+    public int indexOfIgnoreCase(final HttpString other, int start) {
+        final byte[] otherBytes = other.bytes;
+        return arrayIndexOfIgnoreCase(bytes, start, otherBytes, 0, otherBytes.length);
+    }
+
+    public int indexOfIgnoreCase(final String other) {
+        return arrayIndexOfIgnoreCase(bytes, 0, other);
+    }
+
+    public int indexOfIgnoreCase(final String other, int start) {
+        return arrayIndexOfIgnoreCase(bytes, start, other);
     }
 
     public int lastIndexOf(final HttpString other) {
@@ -942,45 +1190,143 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
     }
 
     public int lastIndexOf(final String other) {
-        return toString().lastIndexOf(other);
+        final String string = this.string;
+        if (string != null) {
+            return string.lastIndexOf(other);
+        } else {
+            return arrayLastIndexOf(bytes, 0, other);
+        }
     }
 
     public int lastIndexOf(final String other, int start) {
-        return toString().lastIndexOf(other, start);
-    }
-
-    public boolean regionMatches(boolean ignoreCase, int offset, byte[] other, int ooffs, int len) {
-        if (offset < 0 || ooffs < 0 || offset + len > bytes.length || ooffs + len > other.length) {
-            return false;
-        }
-        if (ignoreCase) {
-            return arrayEqualsIgnoreCase(bytes, offset, other, ooffs, len);
+        final String string = this.string;
+        if (string != null) {
+            return string.lastIndexOf(other, start);
         } else {
-            return arrayEquals(bytes, offset, other, ooffs, len);
+            return arrayLastIndexOf(bytes, start, other);
         }
     }
 
-    public boolean regionMatches(boolean ignoreCase, int offset, HttpString other, int ooffs, int len) {
+    public int lastIndexOfIgnoreCase(final HttpString other) {
         final byte[] otherBytes = other.bytes;
-        if (offset < 0 || ooffs < 0 || offset + len > bytes.length || ooffs + len > otherBytes.length) {
+        return arrayLastIndexOfIgnoreCase(bytes, 0, otherBytes, 0, otherBytes.length);
+    }
+
+    public int lastIndexOfIgnoreCase(final HttpString other, int start) {
+        final byte[] otherBytes = other.bytes;
+        return arrayLastIndexOfIgnoreCase(bytes, start, otherBytes, 0, otherBytes.length);
+    }
+
+    public int lastIndexOfIgnoreCase(final String other) {
+        return arrayLastIndexOfIgnoreCase(bytes, 0, other);
+    }
+
+    public int lastIndexOfIgnoreCase(final String other, int start) {
+        return arrayLastIndexOfIgnoreCase(bytes, start, other);
+    }
+
+    public boolean regionMatches(boolean ignoreCase, int offset, byte[] other, int otherOffset, int len) {
+        if (offset < 0 || otherOffset < 0 || offset + len > bytes.length || otherOffset + len > other.length) {
             return false;
         }
         if (ignoreCase) {
-            return arrayEqualsIgnoreCase(bytes, offset, otherBytes, ooffs, len);
+            return arrayEqualsIgnoreCase(bytes, offset, other, otherOffset, len);
         } else {
-            return arrayEquals(bytes, offset, otherBytes, ooffs, len);
+            return arrayEquals(bytes, offset, other, otherOffset, len);
         }
     }
 
-    public boolean regionMatches(boolean ignoreCase, int offset, String other, int ooffs, int len) {
-        return toString().regionMatches(ignoreCase, offset, other, ooffs, len);
+    public boolean regionMatches(boolean ignoreCase, int offset, HttpString other, int otherOffset, int len) {
+        final byte[] otherBytes = other.bytes;
+        if (offset < 0 || otherOffset < 0 || offset + len > bytes.length || otherOffset + len > otherBytes.length) {
+            return false;
+        }
+        if (ignoreCase) {
+            return arrayEqualsIgnoreCase(bytes, offset, otherBytes, otherOffset, len);
+        } else {
+            return arrayEquals(bytes, offset, otherBytes, otherOffset, len);
+        }
+    }
+
+    public boolean regionMatches(boolean ignoreCase, int offset, String other, int otherOffset, int len) {
+        final String string = this.string;
+        if (string != null) {
+            return string.regionMatches(ignoreCase, offset, other, otherOffset, len);
+        }
+        if (offset < 0 || otherOffset < 0 || offset + len > bytes.length || otherOffset + len > other.length()) {
+            return false;
+        }
+        if (ignoreCase) {
+            return arrayEqualsIgnoreCase(bytes, offset, other, otherOffset, len);
+        } else {
+            return arrayEquals(bytes, offset, other, otherOffset, len);
+        }
     }
 
     public char charAt(final int index) {
-        return (char) (byteAt(index) & 0xff);
+        return (char) (bytes[index] & 0xff);
     }
 
     public HttpString subSequence(final int start, final int end) {
         return substring(start, end);
+    }
+
+    /**
+     * A class allowing privileged code to get raw access to the string internals for extra-efficient operations.
+     */
+    public static class RawAccess {
+        private static final RuntimePermission PERM = new RuntimePermission("HttpStringRawAccess");
+        private static final RawAccess INSTANCE = new RawAccess();
+
+        private RawAccess() {}
+
+        /**
+         * Get the instance of this class.  If a security manager is present, the caller must have the
+         * {@code HttpStringRawAccess} {@link RuntimePermission}.
+         *
+         * @return the instance of this class
+         * @throws SecurityException if a security manager is installed and the caller does not have sufficient permission
+         */
+        public static RawAccess getInstance() {
+            final SecurityManager sm = System.getSecurityManager();
+            if (sm != null) {
+                sm.checkPermission(PERM);
+            }
+            return INSTANCE;
+        }
+
+        /**
+         * Get the internal byte array of an HTTP string.  This array must not be mutated.
+         *
+         * @return the internal byte array of an HTTP string
+         */
+        public byte[] getInternalBytes(HttpString httpString) {
+            return httpString.bytes;
+        }
+
+        /**
+         * Construct a new HTTP string using the exact given byte array.  The byte array must not be {@code null} and
+         * must not be mutated after calling this method.
+         *
+         * @param bytes the byte array to use
+         * @return the new HTTP string
+         */
+        public HttpString constructWith(byte[] bytes) {
+            return new HttpString(bytes, null);
+        }
+
+        /**
+         * Construct a new HTTP string using the exact given byte array and string.  The byte array must not be
+         * {@code null} and must not be mutated after calling this method.  The string must not be {@code null} and
+         * must contain the exact same characters as the byte array, with the byte array being an ISO-8859-1
+         * representation.
+         *
+         * @param bytes the byte array to use
+         * @return the new HTTP string
+         */
+        public HttpString constructWith(byte[] bytes, String str) {
+            assert Arrays.equals(bytes, str.getBytes(Charset.forName("ISO-8859-1")));
+            return new HttpString(bytes, str);
+        }
     }
 }
