@@ -199,12 +199,12 @@ public class AsyncWebSocketHttpServerExchange implements WebSocketHttpExchange {
 
     @Override
     public String getRequestScheme() {
-        return exchange.getRequestScheme();
+        return exchange.getRequestScheme().toString();
     }
 
     @Override
     public String getRequestURI() {
-        return exchange.getRequestURI();
+        return exchange.getRequestURI().toString();
     }
 
     @Override
@@ -214,7 +214,7 @@ public class AsyncWebSocketHttpServerExchange implements WebSocketHttpExchange {
 
     @Override
     public String getQueryString() {
-        return exchange.getQueryString();
+        return exchange.getQueryString().toString();
     }
 
     @Override

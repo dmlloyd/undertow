@@ -36,9 +36,9 @@ public class PredicateParsingTestCase {
         Predicate predicate = PredicateParser.parse("path[foo]", PredicateParsingTestCase.class.getClassLoader());
         Assert.assertTrue(predicate instanceof PathMatchPredicate);
         HttpServerExchange e = new HttpServerExchange(null);
-        e.setRelativePath("foo");
+        e.setRelativePath(HttpString.fromString("foo"));
         Assert.assertTrue(predicate.resolve(e));
-        e.setRelativePath("bob");
+        e.setRelativePath(HttpString.fromString("bob"));
         Assert.assertFalse(predicate.resolve(e));
 
         for (String string : new String[]{
@@ -50,9 +50,9 @@ public class PredicateParsingTestCase {
             try {
                 predicate = PredicateParser.parse(string, PredicateParsingTestCase.class.getClassLoader());
                 e = new HttpServerExchange(null);
-                e.setRelativePath("foo");
+                e.setRelativePath(HttpString.fromString("foo"));
                 Assert.assertFalse(predicate.resolve(e));
-                e.setRelativePath("bob");
+                e.setRelativePath(HttpString.fromString("bob"));
                 Assert.assertTrue(predicate.resolve(e));
             } catch (Throwable ex) {
                 throw new RuntimeException("String " + string, ex);
@@ -65,18 +65,18 @@ public class PredicateParsingTestCase {
         Predicate predicate = PredicateParser.parse("regex[pattern=a* , value=%{RELATIVE_PATH}] and equals[{$0, aaa}]", PredicateParsingTestCase.class.getClassLoader());
         HttpServerExchange e = new HttpServerExchange(null);
         e.putAttachment(Predicate.PREDICATE_CONTEXT, new HashMap<String, Object>());
-        e.setRelativePath("aaab");
+        e.setRelativePath(HttpString.fromString("aaab"));
         Assert.assertTrue(predicate.resolve(e));
-        e.setRelativePath("aaaab");
+        e.setRelativePath(HttpString.fromString("aaaab"));
         Assert.assertFalse(predicate.resolve(e));
 
         predicate = PredicateParser.parse("regex[pattern='a(b*)a*' , value=%{RELATIVE_PATH}] and equals[$1, bb]", PredicateParsingTestCase.class.getClassLoader());
         e.putAttachment(Predicate.PREDICATE_CONTEXT, new HashMap<String, Object>());
-        e.setRelativePath("abb");
+        e.setRelativePath(HttpString.fromString("abb"));
         Assert.assertTrue(predicate.resolve(e));
-        e.setRelativePath("abbaaa");
+        e.setRelativePath(HttpString.fromString("abbaaa"));
         Assert.assertTrue(predicate.resolve(e));
-        e.setRelativePath("abbb");
+        e.setRelativePath(HttpString.fromString("abbb"));
         Assert.assertFalse(predicate.resolve(e));
     }
 

@@ -99,12 +99,12 @@ public class ServletInitialHandler implements HttpHandler, ServletDispatcher {
 
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-        final String path = exchange.getRelativePath();
+        final HttpString path = exchange.getRelativePath();
         if(isForbiddenPath(path)) {
             exchange.setResponseCode(404);
             return;
         }
-        final ServletPathMatch info = paths.getServletHandlerByPath(path);
+        final ServletPathMatch info = paths.getServletHandlerByPath(path.toString());
         if (info.getType() == ServletPathMatch.Type.REDIRECT) {
             //UNDERTOW-89
             //we redirect on GET requests to the root context to add an / to the end
@@ -114,9 +114,9 @@ public class ServletInitialHandler implements HttpHandler, ServletDispatcher {
         } else if (info.getType() == ServletPathMatch.Type.REWRITE) {
             //this can only happen if the path ends with a /
             //otherwise there would be a rewrite instead
-            exchange.setRelativePath(exchange.getRelativePath() + info.getRewriteLocation());
-            exchange.setRequestURI(exchange.getRequestURI() + info.getRewriteLocation());
-            exchange.setRequestPath(exchange.getRequestPath() + info.getRewriteLocation());
+            exchange.setRelativePath(exchange.getRelativePath().concat(info.getRewriteLocation()));
+            exchange.setRequestURI(exchange.getRequestURI().concat(info.getRewriteLocation()));
+            exchange.setRequestPath(exchange.getRequestPath().concat(info.getRewriteLocation()));
         }
 
         final HttpServletResponseImpl response = new HttpServletResponseImpl(exchange, servletContext);
@@ -160,8 +160,8 @@ public class ServletInitialHandler implements HttpHandler, ServletDispatcher {
         }
     }
 
-    private boolean isForbiddenPath(String path) {
-        return path.equalsIgnoreCase("/meta-inf/")
+    private boolean isForbiddenPath(HttpString path) {
+        return path.equalToStringIgnoreCase("/meta-inf/")
             || path.regionMatches(true, 0, "/web-inf/", 0, "/web-inf/".length());
     }
 
@@ -183,15 +183,15 @@ public class ServletInitialHandler implements HttpHandler, ServletDispatcher {
         final ByteBufferSlicePool bufferPool = new ByteBufferSlicePool(BufferAllocator.BYTE_BUFFER_ALLOCATOR, 1024, 1024);
         MockServerConnection connection = new MockServerConnection(bufferPool);
         HttpServerExchange exchange = new HttpServerExchange(connection);
-        exchange.setRequestScheme(request.getScheme());
+        exchange.setRequestScheme(HttpString.fromString(request.getScheme()));
         exchange.setRequestMethod(new HttpString(request.getMethod()));
         exchange.setProtocol(Protocols.HTTP_1_0);
-        exchange.setResolvedPath(request.getContextPath());
-        String relative;
+        exchange.setResolvedPath(HttpString.fromString(request.getContextPath()));
+        HttpString relative;
         if (request.getPathInfo() == null) {
-            relative = request.getServletPath();
+            relative = HttpString.fromString(request.getServletPath());
         } else {
-            relative = request.getServletPath() + request.getPathInfo();
+            relative = HttpString.concat(request.getServletPath(), request.getPathInfo());
         }
         exchange.setRelativePath(relative);
         final ServletPathMatch info = paths.getServletHandlerByPath(request.getServletPath());
@@ -245,7 +245,7 @@ public class ServletInitialHandler implements HttpHandler, ServletDispatcher {
                     //because they can be easily caused by malicious remote clients in at attempt to DOS the server by filling the logs
                     UndertowLogger.REQUEST_IO_LOGGER.debugf(t, "Exception handling request to %s", exchange.getRequestURI());
                 } else {
-                    UndertowLogger.REQUEST_LOGGER.exceptionHandlingRequest(t, exchange.getRequestURI());
+                    UndertowLogger.REQUEST_LOGGER.exceptionHandlingRequest(t, exchange.getRequestURI().toString());
                 }
                 if (request.isAsyncStarted() || request.getDispatcherType() == DispatcherType.ASYNC) {
                     exchange.unDispatch();

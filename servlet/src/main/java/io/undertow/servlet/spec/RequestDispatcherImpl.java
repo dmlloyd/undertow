@@ -25,6 +25,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.undertow.util.HttpString;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -133,14 +134,14 @@ public class RequestDispatcherImpl implements RequestDispatcher {
                     newServletPath = newServletPath.substring(0, qsPos);
 
                     Map<String, Deque<String>> newQueryParameters = QueryParameterUtils.mergeQueryParametersWithNewQueryString(queryParameters, newQueryString);
-                    requestImpl.getExchange().setQueryString(newQueryString);
+                    requestImpl.getExchange().setQueryString(HttpString.fromString(newQueryString));
                     requestImpl.setQueryParameters(newQueryParameters);
                 }
-                String newRequestUri = servletContext.getContextPath() + newServletPath;
+                HttpString newRequestUri = HttpString.concat(servletContext.getContextPath(), newServletPath);
 
 
 
-                requestImpl.getExchange().setRelativePath(newServletPath);
+                requestImpl.getExchange().setRelativePath(HttpString.fromString(newServletPath));
                 requestImpl.getExchange().setRequestPath(newRequestUri);
                 requestImpl.getExchange().setRequestURI(newRequestUri);
                 requestImpl.getExchange().getAttachment(ServletRequestContext.ATTACHMENT_KEY).setServletPathMatch(pathMatch);
@@ -356,7 +357,7 @@ public class RequestDispatcherImpl implements RequestDispatcher {
             newQueryString = newServletPath.substring(qsPos + 1);
             newServletPath = newServletPath.substring(0, qsPos);
         }
-        String newRequestUri = servletContext.getContextPath() + newServletPath;
+        HttpString newRequestUri = HttpString.concat(servletContext.getContextPath(), newServletPath);
 
         //todo: a more efficent impl
         Map<String, Deque<String>> newQueryParameters = new HashMap<String, Deque<String>>();
@@ -376,8 +377,8 @@ public class RequestDispatcherImpl implements RequestDispatcher {
         }
         requestImpl.setQueryParameters(newQueryParameters);
 
-        requestImpl.getExchange().setRelativePath(newServletPath);
-        requestImpl.getExchange().setQueryString(newQueryString);
+        requestImpl.getExchange().setRelativePath(HttpString.fromString(newServletPath));
+        requestImpl.getExchange().setQueryString(HttpString.fromString(newQueryString));
         requestImpl.getExchange().setRequestPath(newRequestUri);
         requestImpl.getExchange().setRequestURI(newRequestUri);
         requestImpl.getExchange().getAttachment(ServletRequestContext.ATTACHMENT_KEY).setServletPathMatch(pathMatch);

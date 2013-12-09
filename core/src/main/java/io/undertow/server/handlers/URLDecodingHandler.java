@@ -8,6 +8,7 @@ import java.util.TreeMap;
 import io.undertow.UndertowOptions;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 import io.undertow.util.URLUtils;
 
 /**
@@ -36,9 +37,9 @@ public class URLDecodingHandler implements HttpHandler {
         if (!decodeDone) {
             final StringBuilder sb = new StringBuilder();
             final boolean decodeSlash = exchange.getConnection().getUndertowOptions().get(UndertowOptions.ALLOW_ENCODED_SLASH, false);
-            exchange.setRequestPath(URLUtils.decode(exchange.getRequestPath(), charset, decodeSlash, sb));
-            exchange.setRelativePath(URLUtils.decode(exchange.getRelativePath(), charset, decodeSlash, sb));
-            exchange.setResolvedPath(URLUtils.decode(exchange.getResolvedPath(), charset, decodeSlash, sb));
+            exchange.setRequestPath(HttpString.fromString(URLUtils.decode(exchange.getRequestPath().toString(), charset, decodeSlash, sb)));
+            exchange.setRelativePath(HttpString.fromString(URLUtils.decode(exchange.getRelativePath().toString(), charset, decodeSlash, sb)));
+            exchange.setResolvedPath(HttpString.fromString(URLUtils.decode(exchange.getResolvedPath().toString(), charset, decodeSlash, sb)));
             if (!exchange.getQueryString().isEmpty()) {
                 final TreeMap<String, Deque<String>> newParams = new TreeMap<String, Deque<String>>();
                 for (Map.Entry<String, Deque<String>> param : exchange.getQueryParameters().entrySet()) {

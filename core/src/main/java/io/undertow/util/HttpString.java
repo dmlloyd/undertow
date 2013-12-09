@@ -21,8 +21,10 @@ package io.undertow.util;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -530,6 +532,27 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
      */
     public static String toString(HttpString httpString) {
         return httpString == null ? null : httpString.toString();
+    }
+
+    /**
+     * Get the UTF-8-decoded {@code String} for this HTTP string.
+     *
+     * @return the UTF-8-decoded form
+     */
+    public String toStringUtf8() {
+        return new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Decode this HTTP string into a Java {@code String} using the given character set name.
+     *
+     * @param charsetName the character set name
+     * @return the string
+     * @throws UnsupportedEncodingException if the character encoding isn't supported
+     */
+    public String toString(String charsetName) throws UnsupportedEncodingException {
+        if ("ISO-8859-1".equalsIgnoreCase(charsetName) || "Latin-1".equalsIgnoreCase(charsetName) || "ISO-Latin-1".equals(charsetName)) return toString();
+        return new String(bytes, charsetName);
     }
 
     static int hashCodeIgnoreCaseOf(String headerName) {
@@ -1361,12 +1384,40 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
         return new HttpString(newBytes, null);
     }
 
+    public static HttpString concat(String prefix, HttpString suffix) {
+        final int prefixLength = prefix.length();
+        final byte[] suffixBytes = suffix.bytes;
+        final int suffixLength = suffixBytes.length;
+        final byte[] newBytes = new byte[prefixLength + suffixLength];
+        getStringBytes(false, newBytes, 0, prefix, 0, prefixLength);
+        System.arraycopy(suffixBytes, 0, newBytes, prefixLength, suffixLength);
+        return new HttpString(newBytes, null);
+    }
+
+    public static HttpString concat(String prefix, String suffix) {
+        final int prefixLength = prefix.length();
+        final int suffixLength = suffix.length();
+        final byte[] newBytes = new byte[prefixLength + suffixLength];
+        getStringBytes(false, newBytes, 0, prefix, 0, prefixLength);
+        getStringBytes(false, newBytes, prefixLength, suffix, 0, suffixLength);
+        return new HttpString(newBytes, null);
+    }
+
     public char charAt(final int index) {
         return (char) (bytes[index] & 0xff);
     }
 
     public HttpString subSequence(final int start, final int end) {
         return substring(start, end);
+    }
+
+    /**
+     * Determine whether this string is empty.
+     *
+     * @return {@code true} if it is empty, {@code false} if there is content
+     */
+    public boolean isEmpty() {
+        return bytes.length == 0;
     }
 
     /**

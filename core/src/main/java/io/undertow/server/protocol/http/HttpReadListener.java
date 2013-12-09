@@ -22,6 +22,7 @@ import io.undertow.UndertowLogger;
 import io.undertow.UndertowOptions;
 import io.undertow.server.Connectors;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import io.undertow.util.StringWriteChannelListener;
 import org.xnio.ChannelListener;
 import org.xnio.ChannelListeners;
@@ -134,7 +135,7 @@ final class HttpReadListener implements ChannelListener<ConduitStreamSourceChann
             } while (!state.isComplete());
 
             final HttpServerExchange httpServerExchange = this.httpServerExchange;
-            httpServerExchange.setRequestScheme(connection.getSslSession() != null ? "https" : "http");
+            httpServerExchange.setRequestScheme(connection.getSslSession() != null ? Headers.HTTPS : Headers.HTTP);
             this.httpServerExchange = null;
             requestStateUpdater.set(this, 1);
             HttpTransferEncoding.setupRequest(httpServerExchange);

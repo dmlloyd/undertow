@@ -28,6 +28,14 @@ import java.util.HashMap;
  */
 public final class Headers {
 
+    // Common strings
+
+    public static final String HTTP_STRING = "http";
+    public static final String HTTPS_STRING = "https";
+
+    public static final HttpString HTTP = new HttpString(HTTP_STRING);
+    public static final HttpString HTTPS = new HttpString(HTTPS_STRING);
+
     private Headers() {
     }
 

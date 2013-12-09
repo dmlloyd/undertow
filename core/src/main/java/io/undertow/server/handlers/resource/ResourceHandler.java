@@ -118,7 +118,7 @@ public class ResourceHandler implements HttpHandler {
             public void run() {
                 Resource resource = null;
                 try {
-                    resource = resourceManager.getResource(exchange.getRelativePath());
+                    resource = resourceManager.getResource(exchange.getRelativePath().toString());
                 } catch (IOException e) {
                     UndertowLogger.REQUEST_IO_LOGGER.ioException(e);
                     exchange.setResponseCode(500);
@@ -150,7 +150,7 @@ public class ResourceHandler implements HttpHandler {
                             exchange.endExchange();
                             return;
                         }
-                    } else if (!exchange.getRequestPath().endsWith("/")) {
+                    } else if (!exchange.getRequestPath().endsWith('/')) {
                         exchange.setResponseCode(302);
                         exchange.getResponseHeaders().put(Headers.LOCATION, new HttpString(RedirectBuilder.redirect(exchange, exchange.getRelativePath() + "/", true)));
                         exchange.endExchange();

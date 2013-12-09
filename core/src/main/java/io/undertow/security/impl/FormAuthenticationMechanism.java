@@ -163,7 +163,7 @@ public class FormAuthenticationMechanism implements AuthenticationMechanism {
     }
 
     protected void storeInitialLocation(final HttpServerExchange exchange) {
-        exchange.setResponseCookie(new CookieImpl(LOCATION_COOKIE, exchange.getRequestURI()));
+        exchange.setResponseCookie(new CookieImpl(LOCATION_COOKIE, exchange.getRequestURI().toString()));
     }
 
     protected Integer servePage(final HttpServerExchange exchange, final String location) {

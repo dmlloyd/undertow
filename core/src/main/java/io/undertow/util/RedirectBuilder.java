@@ -37,11 +37,11 @@ public class RedirectBuilder {
      */
     public static String redirect(final HttpServerExchange exchange, final String newRelativePath, final boolean includeParameters) {
         try {
-            StringBuilder uri = new StringBuilder(exchange.getRequestScheme());
+            StringBuilder uri = new StringBuilder(exchange.getRequestScheme().toString());
             uri.append("://");
             uri.append(exchange.getHostAndPort());
-            uri.append(encodeUrlPart(exchange.getResolvedPath()));
-            if (exchange.getResolvedPath().endsWith("/")) {
+            uri.append(encodeUrlPart(exchange.getResolvedPath().toString()));
+            if (exchange.getResolvedPath().endsWith('/')) {
                 if (newRelativePath.startsWith("/")) {
                     uri.append(encodeUrlPart(newRelativePath.substring(1)));
                 } else {
@@ -72,7 +72,7 @@ public class RedirectBuilder {
                 }
                 if (!exchange.getQueryString().isEmpty()) {
                     uri.append('?');
-                    uri.append(exchange.getQueryString());
+                    uri.append(exchange.getQueryString().toString());
                 }
             }
             return uri.toString();

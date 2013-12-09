@@ -53,7 +53,7 @@ public class RedirectTestCase {
                 .addPrefixPath("/target", new HttpHandler() {
                     @Override
                     public void handleRequest(HttpServerExchange exchange) throws Exception {
-                        message = exchange.getRequestURI();
+                        message = exchange.getRequestURI().toString();
                     }
                 })
                 .addPrefixPath("/", predicateContext(predicate(Predicates.regex("%{REQUEST_URL}", "/(aa.*?)c", RedirectTestCase.class.getClassLoader(), false),

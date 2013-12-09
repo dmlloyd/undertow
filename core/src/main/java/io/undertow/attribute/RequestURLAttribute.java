@@ -1,6 +1,7 @@
 package io.undertow.attribute;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 import io.undertow.util.QueryParameterUtils;
 
 /**
@@ -21,25 +22,25 @@ public class RequestURLAttribute implements ExchangeAttribute {
 
     @Override
     public String readAttribute(final HttpServerExchange exchange) {
-        return exchange.getRequestURI();
+        return exchange.getRequestURI().toString();
     }
 
     @Override
     public void writeAttribute(final HttpServerExchange exchange, final String newValue) throws ReadOnlyAttributeException {
         int pos = newValue.indexOf('?');
         if (pos == -1) {
-            exchange.setRelativePath(newValue);
-            exchange.setRequestURI(newValue);
-            exchange.setRequestPath(newValue);
-            exchange.setResolvedPath("");
+            exchange.setRelativePath(HttpString.fromString(newValue));
+            exchange.setRequestURI(HttpString.fromString(newValue));
+            exchange.setRequestPath(HttpString.fromString(newValue));
+            exchange.setResolvedPath(HttpString.EMPTY);
         } else {
             final String path = newValue.substring(0, pos);
-            exchange.setRelativePath(path);
-            exchange.setRequestURI(path);
-            exchange.setRequestPath(path);
-            exchange.setResolvedPath("");
+            exchange.setRelativePath(HttpString.fromString(path));
+            exchange.setRequestURI(HttpString.fromString(path));
+            exchange.setRequestPath(HttpString.fromString(path));
+            exchange.setResolvedPath(HttpString.EMPTY);
             final String newQueryString = newValue.substring(pos);
-            exchange.setQueryString(newQueryString);
+            exchange.setQueryString(HttpString.fromString(newQueryString));
             exchange.getQueryParameters().putAll(QueryParameterUtils.parseQueryString(newQueryString.substring(1)));
         }
 

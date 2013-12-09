@@ -19,6 +19,7 @@ package io.undertow.security.handlers;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -46,9 +47,9 @@ public class SinglePortConfidentialityHandler extends AbstractConfidentialityHan
     protected URI getRedirectURI(HttpServerExchange exchange, int port) throws URISyntaxException {
         String host = exchange.getHostName();
 
-        String queryString = exchange.getQueryString();
-        return new URI("https", null, host, port, exchange.getRequestURI(),
-                queryString == null || queryString.length() == 0 ? null : queryString, null);
+        HttpString queryString = exchange.getQueryString();
+        return new URI("https", null, host, port, exchange.getRequestURI().toString(),
+                queryString == null || queryString.length() == 0 ? null : queryString.toString(), null);
     }
 
 }

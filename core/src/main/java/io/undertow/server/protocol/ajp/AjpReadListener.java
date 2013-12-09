@@ -171,7 +171,7 @@ final class AjpReadListener implements ChannelListener<StreamSourceChannel> {
                 connection.setSSLSessionInfo(state.createSslSessionInfo());
                 httpServerExchange.setSourceAddress(state.createPeerAddress());
                 if(scheme != null) {
-                    httpServerExchange.setRequestScheme(scheme);
+                    httpServerExchange.setRequestScheme(HttpString.fromString(scheme));
                 }
                 state = null;
                 this.httpServerExchange = null;

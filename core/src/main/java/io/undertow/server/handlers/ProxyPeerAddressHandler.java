@@ -41,7 +41,7 @@ public class ProxyPeerAddressHandler implements HttpHandler {
         }
         HttpString forwardedProto = exchange.getRequestHeaders().getFirst(Headers.X_FORWARDED_PROTO);
         if (forwardedProto != null) {
-            exchange.setRequestScheme(forwardedProto.toString());
+            exchange.setRequestScheme(forwardedProto);
         }
         next.handleRequest(exchange);
     }

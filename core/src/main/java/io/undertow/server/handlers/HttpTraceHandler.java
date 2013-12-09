@@ -29,15 +29,15 @@ public class HttpTraceHandler implements HttpHandler {
             body.append(exchange.getRequestURI());
             if(!exchange.getQueryString().isEmpty()) {
                 body.append('?');
-                body.append(exchange.getQueryString());
+                body.append(exchange.getQueryString().toString());
             }
             body.append(exchange.getProtocol().toString());
             body.append("\r\n");
             for(HeaderValues header : exchange.getRequestHeaders()) {
                 for(HttpString value : header) {
-                    body.append(header.getHeaderName());
+                    body.append(header.getHeaderName().toString());
                     body.append(": ");
-                    body.append(value);
+                    body.append(value.toString());
                     body.append("\r\n");
                 }
             }

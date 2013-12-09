@@ -51,8 +51,8 @@ public class SimpleParserTestCase {
         HttpServerExchange result = new HttpServerExchange(null);
         HttpRequestParser.instance(OptionMap.EMPTY).handle(ByteBuffer.wrap(in), context, result);
         Assert.assertSame(Methods.GET, result.getRequestMethod());
-        Assert.assertEquals("/somepath%2FotherPath", result.getRequestURI());
-        Assert.assertEquals("/somepath%2FotherPath", result.getRequestPath());
+        Assert.assertEquals("/somepath%2FotherPath", result.getRequestURI().toString());
+        Assert.assertEquals("/somepath%2FotherPath", result.getRequestPath().toString());
     }
 
     @Test
@@ -63,8 +63,8 @@ public class SimpleParserTestCase {
         HttpServerExchange result = new HttpServerExchange(null);
         HttpRequestParser.instance(OptionMap.create(UndertowOptions.ALLOW_ENCODED_SLASH, true)).handle(ByteBuffer.wrap(in), context, result);
         Assert.assertSame(Methods.GET, result.getRequestMethod());
-        Assert.assertEquals("/somepath/otherPath", result.getRequestPath());
-        Assert.assertEquals("/somepath%2fotherPath", result.getRequestURI());
+        Assert.assertEquals("/somepath/otherPath", result.getRequestPath().toString());
+        Assert.assertEquals("/somepath%2fotherPath", result.getRequestURI().toString());
     }
 
     @Test
@@ -74,8 +74,8 @@ public class SimpleParserTestCase {
         HttpServerExchange result = new HttpServerExchange(null);
         HttpRequestParser.instance(OptionMap.create(UndertowOptions.ALLOW_ENCODED_SLASH, true)).handle(ByteBuffer.wrap(in), context, result);
         Assert.assertSame(Methods.GET, result.getRequestMethod());
-        Assert.assertEquals("/somepath", result.getRequestPath());
-        Assert.assertEquals("/somepath;p1", result.getRequestURI());
+        Assert.assertEquals("/somepath", result.getRequestPath().toString());
+        Assert.assertEquals("/somepath;p1", result.getRequestURI().toString());
         Assert.assertTrue(result.getPathParameters().containsKey("p1"));
 
         in = "GET /somepath;p1=v1&p2=v2?q1=v3 HTTP/1.1\r\n\r\n".getBytes();
@@ -83,9 +83,9 @@ public class SimpleParserTestCase {
         result = new HttpServerExchange(null);
         HttpRequestParser.instance(OptionMap.create(UndertowOptions.ALLOW_ENCODED_SLASH, true)).handle(ByteBuffer.wrap(in), context, result);
         Assert.assertSame(Methods.GET, result.getRequestMethod());
-        Assert.assertEquals("/somepath", result.getRequestPath());
-        Assert.assertEquals("/somepath;p1=v1&p2=v2", result.getRequestURI());
-        Assert.assertEquals("q1=v3", result.getQueryString());
+        Assert.assertEquals("/somepath", result.getRequestPath().toString());
+        Assert.assertEquals("/somepath;p1=v1&p2=v2", result.getRequestURI().toString());
+        Assert.assertEquals("q1=v3", result.getQueryString().toString());
         Assert.assertEquals("v1", result.getPathParameters().get("p1").getFirst());
         Assert.assertEquals("v2", result.getPathParameters().get("p2").getFirst());
         Assert.assertEquals("v3", result.getQueryParameters().get("q1").getFirst());
@@ -124,8 +124,8 @@ public class SimpleParserTestCase {
         final ParseState context = new ParseState();
         HttpServerExchange result = new HttpServerExchange(null);
         HttpRequestParser.instance(OptionMap.EMPTY).handle(ByteBuffer.wrap(in), context, result);
-        Assert.assertEquals("/somepath", result.getRelativePath());
-        Assert.assertEquals("http://www.somehost.net/somepath", result.getRequestURI());
+        Assert.assertEquals("/somepath", result.getRelativePath().toString());
+        Assert.assertEquals("http://www.somehost.net/somepath", result.getRequestURI().toString());
     }
 
     @Test
@@ -136,7 +136,7 @@ public class SimpleParserTestCase {
         HttpServerExchange result = new HttpServerExchange(null);
         HttpRequestParser.instance(OptionMap.EMPTY).handle(ByteBuffer.wrap(in), context, result);
         Assert.assertTrue(context.isComplete());
-        Assert.assertEquals("/aa", result.getRelativePath());
+        Assert.assertEquals("/aa", result.getRelativePath().toString());
     }
 
     @Test
@@ -146,9 +146,9 @@ public class SimpleParserTestCase {
         final ParseState context = new ParseState();
         HttpServerExchange result = new HttpServerExchange(null);
         HttpRequestParser.instance(OptionMap.EMPTY).handle(ByteBuffer.wrap(in), context, result);
-        Assert.assertEquals("/somepath", result.getRelativePath());
-        Assert.assertEquals("http://www.somehost.net/somepath", result.getRequestURI());
-        Assert.assertEquals("a=b&b=c&d&e&f=", result.getQueryString());
+        Assert.assertEquals("/somepath", result.getRelativePath().toString());
+        Assert.assertEquals("http://www.somehost.net/somepath", result.getRequestURI().toString());
+        Assert.assertEquals("a=b&b=c&d&e&f=", result.getQueryString().toString());
         Assert.assertEquals("b", result.getQueryParameters().get("a").getFirst());
         Assert.assertEquals("c", result.getQueryParameters().get("b").getFirst());
         Assert.assertEquals("", result.getQueryParameters().get("d").getFirst());
@@ -192,7 +192,7 @@ public class SimpleParserTestCase {
         HttpServerExchange result = new HttpServerExchange(null);
         HttpRequestParser.instance(OptionMap.EMPTY).handle(ByteBuffer.wrap(in), context, result);
         Assert.assertSame(Methods.GET, result.getRequestMethod());
-        Assert.assertEquals("/somepath", result.getRequestURI());
+        Assert.assertEquals("/somepath", result.getRequestURI().toString());
         Assert.assertSame(Protocols.HTTP_1_1, result.getProtocol());
 
         Assert.assertEquals(2, result.getRequestHeaders().getHeaderNames().size());

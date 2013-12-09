@@ -67,7 +67,7 @@ public abstract class AbstractConfidentialityHandler implements HttpHandler {
      * @return true if the request is 'sufficiently' confidential, false otherwise.
      */
     protected boolean isConfidential(final HttpServerExchange exchange) {
-        return exchange.getRequestScheme().equals("https");
+        return exchange.getRequestScheme().equalToString("https");
     }
 
     /**

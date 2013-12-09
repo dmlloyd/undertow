@@ -33,7 +33,7 @@ public class PredicatedHandlersTestCase {
                                         "path-template['/foo/{bar}/{f}'] -> set[attribute='%{o,template}', value='${bar}']", getClass().getClassLoader()), new HttpHandler() {
                     @Override
                     public void handleRequest(HttpServerExchange exchange) throws Exception {
-                        exchange.getResponseSender().send(exchange.getRelativePath());
+                        exchange.getResponseSender().send(exchange.getRelativePath().toString());
                     }
                 }));
 

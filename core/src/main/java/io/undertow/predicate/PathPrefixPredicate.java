@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Set;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 
 /**
  * @author Stuart Douglas
@@ -26,8 +27,8 @@ class PathPrefixPredicate implements Predicate {
 
     @Override
     public boolean resolve(final HttpServerExchange value) {
-        final String relativePath = value.getRelativePath();
-        if (relativePath.startsWith("/")) {
+        final HttpString relativePath = value.getRelativePath();
+        if (relativePath.startsWith('/')) {
             return relativePath.startsWith(slashPath);
         } else {
             return relativePath.startsWith(path);

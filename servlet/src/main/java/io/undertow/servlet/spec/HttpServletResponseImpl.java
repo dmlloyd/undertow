@@ -160,14 +160,14 @@ public final class HttpServletResponseImpl implements HttpServletResponse {
             if (location.startsWith("/")) {
                 realPath = location;
             } else {
-                String current = exchange.getRelativePath();
-                int lastSlash = current.lastIndexOf("/");
+                HttpString current = exchange.getRelativePath();
+                int lastSlash = current.lastIndexOf('/');
                 if (lastSlash != -1) {
                     current = current.substring(0, lastSlash + 1);
                 }
                 realPath = servletContext.getContextPath() + CanonicalPathUtils.canonicalize(current + location);
             }
-            String loc = exchange.getRequestScheme() + "://" + exchange.getHostAndPort() + realPath;
+            String loc = exchange.getRequestScheme().toString() + "://" + exchange.getHostAndPort() + realPath;
             exchange.getResponseHeaders().put(Headers.LOCATION, new HttpString(loc));
         }
         responseDone();

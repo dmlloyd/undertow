@@ -125,7 +125,7 @@ public final class HttpServerExchange extends AbstractAttachable {
 
     private int state = 200;
     private HttpString requestMethod;
-    private String requestScheme;
+    private HttpString requestScheme;
 
     /**
      * The original request URI. This will include the host name if it was specified by the client.
@@ -136,7 +136,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      * GET http://localhost:8080/myFile.jsf?foo=bar HTTP/1.1 -> 'http://localhost:8080/myFile.jsf'
      * POST /my+File.jsf?foo=bar HTTP/1.1 -> '/my+File.jsf'
      */
-    private String requestURI;
+    private HttpString requestURI;
 
     /**
      * The request path. This will be decoded by the server, and does not include the query string.
@@ -147,7 +147,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      * GET http://localhost:8080/b/../my+File.jsf?foo=bar HTTP/1.1 -> '/b/../my+File.jsf'
      * POST /my+File.jsf?foo=bar HTTP/1.1 -> '/my File.jsf'
      */
-    private String requestPath;
+    private HttpString requestPath;
 
     /**
      * The remaining unresolved portion of request path. If a {@link io.undertow.server.handlers.CanonicalPathHandler} is
@@ -155,17 +155,17 @@ public final class HttpServerExchange extends AbstractAttachable {
      * <p/>
      * Initially this will be equal to {@link #requestPath}, however it will be modified as handlers resolve the path.
      */
-    private String relativePath;
+    private HttpString relativePath;
 
     /**
      * The resolved part of the canonical path.
      */
-    private String resolvedPath = "";
+    private HttpString resolvedPath = HttpString.EMPTY;
 
     /**
      * the query string
      */
-    private String queryString = "";
+    private HttpString queryString = HttpString.EMPTY;
 
     private int requestWrapperCount = 0;
     private ConduitWrapper<StreamSourceConduit>[] requestWrappers; //we don't allocate these by default, as for get requests they are not used
@@ -340,7 +340,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      *
      * @return the request URI scheme
      */
-    public String getRequestScheme() {
+    public HttpString getRequestScheme() {
         return requestScheme;
     }
 
@@ -349,7 +349,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      *
      * @param requestScheme the request URI scheme
      */
-    public void setRequestScheme(final String requestScheme) {
+    public void setRequestScheme(final HttpString requestScheme) {
         this.requestScheme = requestScheme;
     }
 
@@ -363,7 +363,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      * GET http://localhost:8080/myFile.jsf?foo=bar HTTP/1.1 -> 'http://localhost:8080/myFile.jsf'
      * POST /my+File.jsf?foo=bar HTTP/1.1 -> '/my+File.jsf'
      */
-    public String getRequestURI() {
+    public HttpString getRequestURI() {
         return requestURI;
     }
 
@@ -372,7 +372,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      *
      * @param requestURI The new request URI
      */
-    public void setRequestURI(final String requestURI) {
+    public void setRequestURI(final HttpString requestURI) {
         this.requestURI = requestURI;
     }
 
@@ -382,7 +382,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      * @param requestURI   The new request URI
      * @param containsHost If this is true the request URI containst the host part
      */
-    public void setRequestURI(final String requestURI, boolean containsHost) {
+    public void setRequestURI(final HttpString requestURI, boolean containsHost) {
         this.requestURI = requestURI;
         if (containsHost) {
             this.state |= FLAG_URI_CONTAINS_HOST;
@@ -414,7 +414,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      * GET http://localhost:8080/b/../my+File.jsf?foo=bar HTTP/1.1 -> '/b/../my+File.jsf'
      * POST /my+File.jsf?foo=bar HTTP/1.1 -> '/my File.jsf'
      */
-    public String getRequestPath() {
+    public HttpString getRequestPath() {
         return requestPath;
     }
 
@@ -423,7 +423,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      *
      * @param requestPath the request URI path
      */
-    public void setRequestPath(final String requestPath) {
+    public void setRequestPath(final HttpString requestPath) {
         this.requestPath = requestPath;
     }
 
@@ -435,7 +435,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      *
      * @return the request relative path
      */
-    public String getRelativePath() {
+    public HttpString getRelativePath() {
         return relativePath;
     }
 
@@ -444,7 +444,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      *
      * @param relativePath the request relative path
      */
-    public void setRelativePath(final String relativePath) {
+    public void setRelativePath(final HttpString relativePath) {
         this.relativePath = relativePath;
     }
 
@@ -453,7 +453,7 @@ public final class HttpServerExchange extends AbstractAttachable {
      *
      * @return the resolved path
      */
-    public String getResolvedPath() {
+    public HttpString getResolvedPath() {
         return resolvedPath;
     }
 
@@ -462,15 +462,15 @@ public final class HttpServerExchange extends AbstractAttachable {
      *
      * @param resolvedPath the resolved path
      */
-    public void setResolvedPath(final String resolvedPath) {
+    public void setResolvedPath(final HttpString resolvedPath) {
         this.resolvedPath = resolvedPath;
     }
 
-    public String getQueryString() {
+    public HttpString getQueryString() {
         return queryString;
     }
 
-    public void setQueryString(final String queryString) {
+    public void setQueryString(final HttpString queryString) {
         this.queryString = queryString;
     }
 
@@ -482,9 +482,9 @@ public final class HttpServerExchange extends AbstractAttachable {
      */
     public String getRequestURL() {
         if (isHostIncludedInRequestURI()) {
-            return getRequestURI();
+            return getRequestURI().toString();
         } else {
-            return getRequestScheme() + "://" + getHostAndPort() + getRequestURI();
+            return getRequestScheme().toString() + "://" + getHostAndPort() + getRequestURI();
         }
     }
 
@@ -526,8 +526,8 @@ public final class HttpServerExchange extends AbstractAttachable {
         if (host == null) {
             host = NetworkUtils.formatPossibleIpv6Address(getDestinationAddress().getAddress().getHostAddress());
             int port = getDestinationAddress().getPort();
-            if (!((getRequestScheme().equals("http") && port == 80)
-                    || (getRequestScheme().equals("https") && port == 8080))) {
+            if (!((getRequestScheme().equalToString("http") && port == 80)
+                    || (getRequestScheme().equalToString("https") && port == 8080))) {
                 host = host + ":" + port;
             }
         }

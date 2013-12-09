@@ -45,7 +45,7 @@ public class SimpleSSLTestCase {
         DefaultServer.setRootHandler(new HttpHandler() {
             @Override
             public void handleRequest(final HttpServerExchange exchange) throws Exception {
-                exchange.getResponseHeaders().put(HttpString.tryFromString("scheme"), new HttpString(exchange.getRequestScheme()));
+                exchange.getResponseHeaders().put(HttpString.tryFromString("scheme"), exchange.getRequestScheme());
                 exchange.endExchange();
             }
         });

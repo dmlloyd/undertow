@@ -25,7 +25,7 @@ public class CachedHttpRequest {
 
 
     public CachedHttpRequest(final HttpServerExchange exchange) {
-        this.path = exchange.getRequestPath();
+        this.path = exchange.getRequestPath().toString();
         this.etag = ETagUtils.getETag(exchange);
         this.contentLocation = HttpString.toString(exchange.getResponseHeaders().getFirst(Headers.CONTENT_LOCATION));
         this.language = HttpString.toString(exchange.getResponseHeaders().getFirst(Headers.CONTENT_LANGUAGE));

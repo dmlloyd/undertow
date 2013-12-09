@@ -31,10 +31,10 @@ public class DirectoryUtils {
     public static boolean sendRequestedBlobs(HttpServerExchange exchange) {
         ByteBuffer buffer = null;
         HttpString type = null;
-        if ("css".equals(exchange.getQueryString())) {
+        if (exchange.getQueryString().equalToString("css")) {
             buffer = Blobs.FILE_CSS_BUFFER.duplicate();
             type = TEXT_CSS;
-        } else if ("js".equals(exchange.getQueryString())) {
+        } else if (exchange.getQueryString().equalToString("js")) {
             buffer = Blobs.FILE_JS_BUFFER.duplicate();
             type = APPLICATION_JAVASCRIPT;
         }
@@ -55,8 +55,8 @@ public class DirectoryUtils {
     }
 
     public static void renderDirectoryListing(HttpServerExchange exchange, Resource resource) {
-        String requestPath = exchange.getRequestPath();
-        if (! requestPath.endsWith("/")) {
+        HttpString requestPath = exchange.getRequestPath();
+        if (! requestPath.endsWith('/')) {
             exchange.setResponseCode(302);
             exchange.getResponseHeaders().put(Headers.LOCATION, new HttpString(RedirectBuilder.redirect(exchange, exchange.getRelativePath() + "/", true)));
             exchange.endExchange();
@@ -64,7 +64,7 @@ public class DirectoryUtils {
         }
 
         // TODO - Fix exchange to sanitize path, so handlers don't need to do this
-        String resolvedPath = exchange.getResolvedPath();
+        HttpString resolvedPath = exchange.getResolvedPath();
         for (int i = 0; i < resolvedPath.length(); i++) {
             if (resolvedPath.charAt(i) != '/') {
                 resolvedPath = resolvedPath.substring(Math.max(0, i - 1));
@@ -81,7 +81,7 @@ public class DirectoryUtils {
                 .append("<tfoot>\n<tr><th class=\"loc footer\" colspan=\"3\">Powered by Undertow</th></tr>\n</tfoot>\n<tbody>\n");
 
         int state  = 0;
-        String parent = null;
+        HttpString parent = null;
         for (int i = requestPath.length() - 1; i >= 0; i--) {
             if (state == 1) {
                 if (requestPath.charAt(i) == '/') {

@@ -28,6 +28,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+import io.undertow.util.HttpString;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -223,7 +224,7 @@ public class AsyncContextImpl implements AsyncContext {
             newQueryString = newServletPath.substring(qsPos + 1);
             newServletPath = newServletPath.substring(0, qsPos);
         }
-        String newRequestUri = context.getContextPath() + newServletPath;
+        HttpString newRequestUri = HttpString.concat(context.getContextPath(), newServletPath);
 
         //todo: a more efficent impl
         Map<String, Deque<String>> newQueryParameters = new HashMap<String, Deque<String>>();
@@ -243,8 +244,8 @@ public class AsyncContextImpl implements AsyncContext {
         }
         requestImpl.setQueryParameters(newQueryParameters);
 
-        requestImpl.getExchange().setRelativePath(newServletPath);
-        requestImpl.getExchange().setQueryString(newQueryString);
+        requestImpl.getExchange().setRelativePath(HttpString.fromString(newServletPath));
+        requestImpl.getExchange().setQueryString(HttpString.fromString(newQueryString));
         requestImpl.getExchange().setRequestPath(newRequestUri);
         requestImpl.getExchange().setRequestURI(newRequestUri);
         requestImpl.setServletContext((ServletContextImpl) context);

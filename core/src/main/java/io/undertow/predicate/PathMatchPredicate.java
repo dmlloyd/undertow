@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Set;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 
 /**
  * @author Stuart Douglas
@@ -26,11 +27,11 @@ class PathMatchPredicate implements Predicate {
 
     @Override
     public boolean resolve(final HttpServerExchange value) {
-        final String relativePath = value.getRelativePath();
-        if (relativePath.startsWith("/")) {
-            return relativePath.equals(slashPath);
+        final HttpString relativePath = value.getRelativePath();
+        if (relativePath.startsWith('/')) {
+            return relativePath.equalToString(slashPath);
         } else {
-            return relativePath.equals(path);
+            return relativePath.equalToString(path);
         }
     }
 

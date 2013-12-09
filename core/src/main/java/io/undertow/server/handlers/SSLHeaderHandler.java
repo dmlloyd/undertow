@@ -37,7 +37,7 @@ import static io.undertow.util.Headers.SSL_SESSION_ID;
  */
 public class SSLHeaderHandler implements HttpHandler {
 
-    public static final String HTTPS = "https";
+    public static final HttpString HTTPS = HttpString.fromString("https");
 
     private static final ExchangeCompletionListener CLEAR_SSL_LISTENER = new ExchangeCompletionListener() {
         @Override

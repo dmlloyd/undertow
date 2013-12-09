@@ -218,15 +218,15 @@ public class AjpRequestParser extends AbstractAjpParser {
                     int colon = result.value.indexOf(';');
                     if(colon == -1) {
                         String res = decode(result.value, result.containsUrlCharacters);
-                        exchange.setRequestURI(result.value);
-                        exchange.setRequestPath(res);
-                        exchange.setRelativePath(res);
+                        exchange.setRequestURI(HttpString.fromString(result.value));
+                        exchange.setRequestPath(HttpString.fromString(res));
+                        exchange.setRelativePath(HttpString.fromString(res));
                     } else {
                         final String url = result.value.substring(0, colon);
                         String res = decode(url, result.containsUrlCharacters);
-                        exchange.setRequestURI(url);
-                        exchange.setRequestPath(res);
-                        exchange.setRelativePath(res);
+                        exchange.setRequestURI(HttpString.fromString(url));
+                        exchange.setRequestPath(HttpString.fromString(res));
+                        exchange.setRelativePath(HttpString.fromString(res));
                         URLUtils.parsePathParms(result.value.substring(colon + 1), exchange, encoding, doDecode && result.containsUrlCharacters);
                     }
                 } else {
@@ -277,9 +277,9 @@ public class AjpRequestParser extends AbstractAjpParser {
                 } else {
                     final byte isSsl = buf.get();
                     if(isSsl != 0) {
-                        exchange.setRequestScheme("https");
+                        exchange.setRequestScheme(Headers.HTTPS);
                     } else {
-                        exchange.setRequestScheme("http");
+                        exchange.setRequestScheme(Headers.HTTP);
                     }
                 }
             }
@@ -362,7 +362,7 @@ public class AjpRequestParser extends AbstractAjpParser {
                     }
                     //query string.
                     if (state.currentAttribute.equals(QUERY_STRING)) {
-                        exchange.setQueryString(result == null ? "" : result);
+                        exchange.setQueryString(result == null ? HttpString.EMPTY : HttpString.fromString(result));
                         URLUtils.parseQueryString(result, exchange, encoding, doDecode);
                     } else {
                         //other attributes

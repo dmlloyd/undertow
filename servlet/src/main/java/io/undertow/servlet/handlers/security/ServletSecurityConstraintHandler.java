@@ -22,6 +22,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.servlet.api.SingleConstraintMatch;
 import io.undertow.servlet.api.TransportGuaranteeType;
 import io.undertow.servlet.handlers.ServletRequestContext;
+import io.undertow.util.HttpString;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,8 +42,8 @@ public class ServletSecurityConstraintHandler implements HttpHandler {
 
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-        final String path = exchange.getRelativePath();
-        SecurityPathMatch securityMatch = securityPathMatches.getSecurityInfo(path, exchange.getRequestMethod().toString());
+        final HttpString path = exchange.getRelativePath();
+        SecurityPathMatch securityMatch = securityPathMatches.getSecurityInfo(path.toString(), exchange.getRequestMethod().toString());
         final ServletRequestContext servletRequestContext = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
         List<SingleConstraintMatch> list = servletRequestContext.getRequiredConstrains();
         if (list == null) {

@@ -1,6 +1,7 @@
 package io.undertow.attribute;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 
 /**
  * The query string
@@ -20,12 +21,12 @@ public class QueryStringAttribute implements ExchangeAttribute {
 
     @Override
     public String readAttribute(final HttpServerExchange exchange) {
-        return exchange.getQueryString();
+        return exchange.getQueryString().toString();
     }
 
     @Override
     public void writeAttribute(final HttpServerExchange exchange, final String newValue) throws ReadOnlyAttributeException {
-        exchange.setQueryString(newValue);
+        exchange.setQueryString(HttpString.fromString(newValue));
     }
 
     public static final class Builder implements ExchangeAttributeBuilder {

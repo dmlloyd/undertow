@@ -247,10 +247,10 @@ public final class ProxyHandler implements HttpHandler {
                 } else {
                     if (clientConnection.getTargetPath().endsWith("/")) {
                         requestURI.append(clientConnection.getTargetPath().substring(0, clientConnection.getTargetPath().length() - 1));
-                        requestURI.append(encodeUrlPart(exchange.getRelativePath()));
+                        requestURI.append(encodeUrlPart(exchange.getRelativePath().toString()));
                     } else {
                         requestURI = requestURI.append(clientConnection.getTargetPath());
-                        requestURI.append(encodeUrlPart(exchange.getRelativePath()));
+                        requestURI.append(encodeUrlPart(exchange.getRelativePath().toString()));
                     }
                 }
                 boolean first = true;
@@ -270,10 +270,10 @@ public final class ProxyHandler implements HttpHandler {
                     }
                 }
 
-                String qs = exchange.getQueryString();
+                HttpString qs = exchange.getQueryString();
                 if (qs != null && !qs.isEmpty()) {
                     requestURI.append('?');
-                    requestURI.append(qs);
+                    requestURI.append(qs.toString());
                 }
             } catch (UnsupportedEncodingException e) {
                 //impossible
@@ -301,7 +301,7 @@ public final class ProxyHandler implements HttpHandler {
                 outboundRequestHeaders.put(Headers.X_FORWARDED_FOR, LOCALHOST);
             }
 
-            if(exchange.getRequestScheme().equals("https")) {
+            if(exchange.getRequestScheme().equalToString("https")) {
                 request.putAttachment(ProxiedRequestAttachments.IS_SSL, true);
             }
 

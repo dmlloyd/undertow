@@ -47,7 +47,7 @@ public class AjpClientExchange extends AbstractAttachable implements ClientExcha
         boolean reqContinue = false;
         if (request.getRequestHeaders().contains(Headers.EXPECT)) {
             for (HttpString header : request.getRequestHeaders().get(Headers.EXPECT)) {
-                if (header.equals("100-continue")) {
+                if (header.equalToString("100-continue")) {
                     reqContinue = true;
                 }
             }

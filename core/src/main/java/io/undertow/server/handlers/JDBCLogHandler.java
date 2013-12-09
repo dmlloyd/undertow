@@ -106,7 +106,7 @@ public class JDBCLogHandler implements HttpHandler, Runnable {
         } else {
             jdbcLogAttribute.user = sc.getAuthenticatedAccount().getPrincipal().getName();
         }
-        jdbcLogAttribute.query = exchange.getQueryString();
+        jdbcLogAttribute.query = HttpString.toString(exchange.getQueryString());
 
         jdbcLogAttribute.bytes = exchange.getResponseContentLength();
         if (jdbcLogAttribute.bytes < 0)

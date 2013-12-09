@@ -237,7 +237,7 @@ public final class HttpServletRequestImpl implements HttpServletRequest {
 
     @Override
     public String getQueryString() {
-        return exchange.getQueryString().isEmpty() ? null : exchange.getQueryString();
+        return exchange.getQueryString().isEmpty() ? null : exchange.getQueryString().toString();
     }
 
     @Override
@@ -295,18 +295,18 @@ public final class HttpServletRequestImpl implements HttpServletRequest {
         //we need the non-decoded string, which means we need to use exchange.getRequestURI()
         if(exchange.isHostIncludedInRequestURI()) {
             //we need to strip out the host part
-            String uri = exchange.getRequestURI();
+            HttpString uri = exchange.getRequestURI();
             int slashes =0;
             for(int i = 0; i < uri.length(); ++i) {
                 if(uri.charAt(i) == '/') {
                     if(++slashes == 3) {
-                        return uri.substring(i);
+                        return uri.toString().substring(i);
                     }
                 }
             }
             return "/";
         } else {
-            return exchange.getRequestURI();
+            return exchange.getRequestURI().toString();
         }
     }
 
@@ -702,7 +702,7 @@ public final class HttpServletRequestImpl implements HttpServletRequest {
 
     @Override
     public String getScheme() {
-        return exchange.getRequestScheme();
+        return exchange.getRequestScheme().toString();
     }
 
     @Override
@@ -814,7 +814,7 @@ public final class HttpServletRequestImpl implements HttpServletRequest {
         if (path.startsWith("/")) {
             realPath = path;
         } else {
-            String current = exchange.getRelativePath();
+            HttpString current = exchange.getRelativePath();
             int lastSlash = current.lastIndexOf("/");
             if (lastSlash != -1) {
                 current = current.substring(0, lastSlash + 1);
