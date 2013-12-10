@@ -169,6 +169,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
      * @return the HTTP string
      */
     public static HttpString fromString(String string) {
+        if (string == null) return null;
         HttpString httpString = Headers.headerFromString(string);
         if (httpString == null) httpString = new HttpString(string);
         return httpString;
@@ -182,6 +183,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
      * @return the HTTP string, or {@code null} if the string is not in a compatible encoding
      */
     public static HttpString tryFromString(String string) {
+        if (string == null) return null;
         HttpString httpString = Headers.headerFromString(string);
         if (httpString != null) {
             return httpString;
