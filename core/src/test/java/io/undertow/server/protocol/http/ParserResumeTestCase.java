@@ -79,7 +79,7 @@ public class ParserResumeTestCase {
 
     private void runAssertions(final HttpServerExchange result, final ParseState context) {
         Assert.assertSame(Methods.POST, result.getRequestMethod());
-        Assert.assertEquals("/apath with spaces and Iñtërnâtiônàližætiøn", result.getRelativePath().toString());
+        Assert.assertEquals("/apath with spaces and Iñtërnâtiônàližætiøn", result.getRelativePath().toStringUtf8());
         Assert.assertEquals("http://www.somehost.net/apath+with+spaces%20and%20I%C3%B1t%C3%ABrn%C3%A2ti%C3%B4n%C3%A0li%C5%BE%C3%A6ti%C3%B8n", result.getRequestURI().toString());
         Assert.assertSame(Protocols.HTTP_1_1, result.getProtocol());
 
