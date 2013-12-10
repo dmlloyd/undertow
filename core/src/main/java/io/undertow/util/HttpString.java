@@ -62,18 +62,6 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
 
     private static final long serialVersionUID = -6359344368200312000L;
 
-    private static final byte[] hi;
-
-    static {
-        final byte[] bytes = new byte[256];
-        int up;
-        for (int i = 0; i < 256; i ++) {
-            up = Character.toUpperCase(i);
-            bytes[i] = (byte) (up > 256 ? i : up);
-        }
-        hi = bytes;
-    }
-
     private final byte[] bytes;
     private transient int hashCode;
     private transient int hashCodeIgnoreCase;
@@ -448,8 +436,7 @@ public final class HttpString implements Comparable<HttpString>, Serializable, C
     }
 
     private static int upperCase(byte b) {
-        // avoid cache miss for common case... hopefully
-        return b >= 'a' && b <= 'z' ? b & 0xDF : b < 0 ? hi[b & 0xff] : b;
+        return b >= 'a' && b <= 'z' ? b & 0xDF : b;
     }
 
     private static boolean arrayEqualsIgnoreCase(final byte[] a, final byte[] b) {
