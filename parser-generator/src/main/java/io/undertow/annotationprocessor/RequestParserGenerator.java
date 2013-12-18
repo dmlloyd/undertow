@@ -1,5 +1,7 @@
 package io.undertow.annotationprocessor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.classfilewriter.ClassFile;
@@ -29,7 +31,21 @@ public class RequestParserGenerator extends AbstractParserGenerator {
         super(PARSE_STATE_CLASS, HTTP_EXCHANGE_CLASS, "(Lorg/xnio/OptionMap;)V");
     }
 
-    protected void createStateMachines(final String[] httpVerbs, final String[] httpVersions, final String[] standardHeaders, final String className, final ClassFile file, final ClassMethod sctor, final AtomicInteger fieldCounter) {
+    protected void createStateMachines(final String[] httpVerbs, final String[] httpVersions, final HttpHeaderConfig[] standardHeaders, final String className, final ClassFile file, final ClassMethod sctor, final AtomicInteger fieldCounter) {
+        final List<MatchRule> rules = new ArrayList<MatchRule>();
+        for (HttpHeaderConfig header : standardHeaders) {
+            final MatchAction action;
+            final String terminators;
+            if (header.csv() ){
+
+            }
+            action = new MatchAction() {
+                public void emitAction(final CodeAttribute code) {
+
+                }
+            };
+            rules.add(new MatchRule(header.name(), action));
+        }
         createStateMachine(httpVerbs, className, file, sctor, fieldCounter, HANDLE_HTTP_VERB, new VerbStateMachine());
         createStateMachine(httpVersions, className, file, sctor, fieldCounter, HANDLE_HTTP_VERSION, new VersionStateMachine());
         createStateMachine(standardHeaders, className, file, sctor, fieldCounter, HANDLE_HEADER, new HeaderStateMachine());

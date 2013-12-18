@@ -28,6 +28,9 @@ import java.util.HashMap;
  */
 public final class Headers {
 
+    private Headers() {
+    }
+
     // Common strings
 
     public static final String HTTP_STRING = "http";
@@ -35,9 +38,6 @@ public final class Headers {
 
     public static final HttpString HTTP = new HttpString(HTTP_STRING);
     public static final HttpString HTTPS = new HttpString(HTTPS_STRING);
-
-    private Headers() {
-    }
 
     // Headers as strings
 
@@ -189,26 +189,51 @@ public final class Headers {
     public static final HttpString X_FORWARDED_FOR = new HttpString(X_FORWARDED_FOR_STRING);
     public static final HttpString X_FORWARDED_PROTO = new HttpString(X_FORWARDED_PROTO_STRING);
 
+    // Common host names
+
+    public static final String LOCALHOST_STRING = "localhost";
+    public static final HttpString LOCALHOST = new HttpString(LOCALHOST_STRING);
+
+    // Common pragmas
+
+    public static final String NO_CACHE_STRING = "no-cache";
+    public static final HttpString NO_CACHE = new HttpString(NO_CACHE_STRING);
+
     // Content codings
 
-    public static final HttpString COMPRESS = new HttpString("compress");
-    public static final HttpString X_COMPRESS = new HttpString("x-compress");
-    public static final HttpString DEFLATE = new HttpString("deflate");
-    public static final HttpString IDENTITY = new HttpString("identity");
-    public static final HttpString GZIP = new HttpString("gzip");
-    public static final HttpString X_GZIP = new HttpString("x-gzip");
+    public static final String COMPRESS_STRING = "compress";
+    public static final String X_COMPRESS_STRING = "x-compress";
+    public static final String DEFLATE_STRING = "deflate";
+    public static final String IDENTITY_STRING = "identity";
+    public static final String GZIP_STRING = "gzip";
+    public static final String X_GZIP_STRING = "x-gzip";
+    public static final String SDCH_STRING = "sdch";
+
+    public static final HttpString COMPRESS = new HttpString(COMPRESS_STRING);
+    public static final HttpString X_COMPRESS = new HttpString(X_COMPRESS_STRING);
+    public static final HttpString DEFLATE = new HttpString(DEFLATE_STRING);
+    public static final HttpString IDENTITY = new HttpString(IDENTITY_STRING);
+    public static final HttpString GZIP = new HttpString(GZIP_STRING);
+    public static final HttpString X_GZIP = new HttpString(X_GZIP_STRING);
+    public static final HttpString SDCH = new HttpString(SDCH_STRING);
 
     // Transfer codings
 
-    public static final HttpString CHUNKED = new HttpString("chunked");
+    public static final String CHUNKED_STRING = "chunked";
+
+    public static final HttpString CHUNKED = new HttpString(CHUNKED_STRING);
     // IDENTITY
     // GZIP
     // COMPRESS
     // DEFLATE
 
     // Connection values
-    public static final HttpString KEEP_ALIVE = new HttpString("keep-alive");
-    public static final HttpString CLOSE = new HttpString("close");
+
+    public static final String KEEP_ALIVE_STRING = "keep-alive";
+    public static final String CLOSE_STRING = "close";
+
+    public static final HttpString KEEP_ALIVE = new HttpString(KEEP_ALIVE_STRING);
+    public static final HttpString CLOSE = new HttpString(CLOSE_STRING);
 
     //MIME header used in multipart file uploads
     public static final String CONTENT_TRANSFER_ENCODING_STRING = "Content-Transfer-Encoding";

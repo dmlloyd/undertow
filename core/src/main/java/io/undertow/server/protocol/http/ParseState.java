@@ -77,7 +77,7 @@ class ParseState {
     boolean urlDecodeRequired = false;
 
     /**
-     * If this is in {@link io.undertow.annotationprocessor.AbstractParserGenerator#NO_STATE} then this holds the current token that has been read so far.
+     * If this is in {@link io.undertow.annotationprocessor.AbstractParserGenerator#INITIAL} then this holds the current token that has been read so far.
      */
     final StringBuilder stringBuilder = new StringBuilder();
 

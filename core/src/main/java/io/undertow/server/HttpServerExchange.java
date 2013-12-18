@@ -126,6 +126,7 @@ public final class HttpServerExchange extends AbstractAttachable {
     private int state = 200;
     private HttpString requestMethod;
     private HttpString requestScheme;
+    private HttpString requestHostName;
 
     /**
      * The original request URI. This will include the host name if it was specified by the client.
@@ -404,6 +405,24 @@ public final class HttpServerExchange extends AbstractAttachable {
         return anyAreSet(state, FLAG_URI_CONTAINS_HOST);
     }
 
+    /**
+     * Get the request host name.  This is the content of the {@code Host} header and will be {@code null} of nothing
+     * was given (e.g. in an HTTP/0.9 request).
+     *
+     * @return the request host name, or {@code null} if none was given
+     */
+    public HttpString getRequestHostName() {
+        return requestHostName;
+    }
+
+    /**
+     * Set the request host name.
+     *
+     * @param requestHostName the request host name
+     */
+    public void setRequestHostName(final HttpString requestHostName) {
+        this.requestHostName = requestHostName;
+    }
 
     /**
      * The request path. This will be decoded by the server, and does not include the query string.

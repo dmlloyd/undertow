@@ -26,11 +26,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.annotation.processing.RoundEnvironment;
+import javax.lang.model.element.TypeElement;
+import javax.tools.Diagnostic;
 import org.jboss.classfilewriter.AccessFlag;
 import org.jboss.classfilewriter.ClassFile;
 import org.jboss.classfilewriter.ClassMethod;
@@ -57,9 +62,27 @@ public abstract class AbstractParserGenerator {
     public static final String HTTP_STRING_DESCRIPTOR = DescriptorUtils.makeDescriptor(HTTP_STRING_CLASS);
 
 
-    //state machine states
-    public static final int NO_STATE = -1;
-    public static final int PREFIX_MATCH = -2;
+    //state machine states (valid on method entry/exit)
+    // header name state
+    public static final int HEADER_NAME = 0;
+    // generic header value state
+    public static final int HEADER_VALUE = 1;
+    // generic header value state
+    public static final int SINGLETON_HEADER_VALUE = 2;
+    // version string (third stage on requests, first on responses)
+    public static final int VERSION = 2;
+    // verb state (requests only, first stage)
+    public static final int VERB = 3;
+    // URI state (requests only)
+    public static final int URI = 4;
+    // status code (responses only)
+    public static final int RESPONSE_CODE = 5;
+    // response description (responses only)
+    public static final int RESPONSE_DESCRIPTION = 6;
+    // special header value states start here including:
+    // - preset values
+    // - header values with methods (string or integral)
+    public static final int SPECIAL_HEADERS = 7;
 
     private static final int CONSTRUCTOR_HTTP_STRING_MAP_VAR = 1;
 
@@ -80,6 +103,32 @@ public abstract class AbstractParserGenerator {
     public static final String HANDLE_HEADER_VALUE = "handleHeaderValue";
     public static final String CLASS_NAME_SUFFIX = "$$generated";
 
+    public static final String HM_GENERIC_HEADER_VALUE;
+    public static final String HM_GENERIC_HEADER_VALUE_CSV;
+    public static final String HM_IS_HEADER;
+    public static final String HM_IS_LWS;
+    public static final String HM_IS_HEADER_VAL;
+
+    public static final int CLASS_SPACE = 0;
+    public static final int CLASS_SEP = 1;
+    public static final int CLASS_TOK = 2;
+    public static final int CLASS_CTL = 3;
+
+    public static final int CONST_OK = 0;
+    public static final int CONST_UNDERFLOW = 1;
+    public static final int CONST_BAD = 2;
+
+    static {
+        int c = 0;
+
+        final String fmt = "$g%03x";
+        HM_GENERIC_HEADER_VALUE = String.format(fmt, c++);
+        HM_GENERIC_HEADER_VALUE_CSV = String.format(fmt, c++);
+        HM_IS_HEADER = String.format(fmt, c++);
+        HM_IS_LWS = String.format(fmt, c++);
+        HM_IS_HEADER_VAL = String.format(fmt, c++);
+    }
+
     public AbstractParserGenerator(final String parseStateClass, final String resultClass, final String constructorDescriptor) {
         this.parseStateClass = parseStateClass;
         this.resultClass = resultClass;
@@ -88,7 +137,7 @@ public abstract class AbstractParserGenerator {
         this.constructorDescriptor = constructorDescriptor;
     }
 
-    public byte[] createTokenizer(final String existingClassName, final String[] httpVerbs, String[] httpVersions, String[] standardHeaders) {
+    public byte[] createTokenizer(final String existingClassName, final String[] httpVerbs, String[] httpVersions, HttpHeaderConfig[] headers) {
         final String className = existingClassName + CLASS_NAME_SUFFIX;
         final ClassFile file = new ClassFile(className, existingClassName);
 
@@ -105,15 +154,536 @@ public abstract class AbstractParserGenerator {
         sctor.getCodeAttribute().invokestatic(existingClassName, "httpStrings", "()" + DescriptorUtils.makeDescriptor(Map.class));
         sctor.getCodeAttribute().astore(CONSTRUCTOR_HTTP_STRING_MAP_VAR);
 
-        createStateMachines(httpVerbs, httpVersions, standardHeaders, className, file, sctor, fieldCounter);
+        createStateMachines(httpVerbs, httpVersions, headers, className, file, sctor, fieldCounter);
 
         sctor.getCodeAttribute().returnInstruction();
         return file.toBytecode();
     }
 
+    protected void addGenericHelpers(ClassFile classFile, String exchangeType, String headerMethod) {
+        {
+            // HEADER is any token char
+            // "any CHAR except CTLs or separators"
+            // CHAR := 0..127
+            // CTLs := 0..31
+            // TEXT := 9|32..126|128..255 (i.e. -128..-1)
+            // separators := ()<>@,;:\"/[]?={}
+            // thus HEADER :=  ! #$%&'  *+ -./
+            //                0123456789
+            //                 ABCDEFGHIJKLMNO
+            //                PQRSTUVWXYZ   ^_
+            //                `abcdefghijklmno
+            //                pqrstuvwxyz | ~
+            //
+            // LWS is supposed to include CRLF but we detect that separately
+            //
+            // HEADER_VALUE is any token OR quoted-string OR separators in any sequence
+
+            final ClassMethod method = classFile.addMethod(AccessFlag.PRIVATE | AccessFlag.STATIC, HM_IS_HEADER, "Z", "B");
+            final CodeAttribute c = method.getCodeAttribute();
+            c.iload(0);
+            c.iconst('z');
+            final BranchEnd weird1 = c.ifIcmpgt();
+            c.iconst('^');
+            final BranchEnd ok = c.ifIcmpge();
+            // assert: x <= ^
+            c.iconst('A');
+            final BranchEnd weird2 = c.ifIcmplt();
+            // A <= x <= ^, just exclude [\]
+            c.iconst('Z');
+            final BranchEnd bad = c.ifIcmpgt();
+            c.branchEnd(ok);
+            final CodeLocation okBack = c.mark();
+            c.iconst(1);
+            c.returnInstruction();
+            c.branchEnd(weird1);
+            // x > 'z'
+            c.iconst('|');
+            c.ifIcmpeq(okBack);
+            c.iconst('~');
+            c.ifIcmpeq(okBack);
+            c.branchEnd(bad);
+            final CodeLocation badBack = c.mark();
+            c.iconst(0);
+            c.returnInstruction();
+            c.branchEnd(weird2);
+            // x < A
+            c.iconst('9');
+            c.ifIcmpgt(badBack);
+            c.iconst('-');
+            c.ifIcmpge(okBack);
+            // only real oddballs remain
+            // x < '-'
+            c.iconst('!');
+            c.ifIcmplt(badBack);
+            // '!' <= x < '-'
+            c.iconst('"');
+            c.ifIcmpeq(badBack);
+            c.iconst('(');
+            c.ifIcmpeq(badBack);
+            c.iconst(')');
+            c.ifIcmpeq(badBack);
+            c.iconst(',');
+            c.ifIcmpeq(badBack);
+            c.gotoInstruction(okBack);
+        }
+        {
+            // we don't include CRLF in our LWS production
+            final ClassMethod method = classFile.addMethod(AccessFlag.PRIVATE | AccessFlag.STATIC, HM_IS_LWS, "Z", "B");
+            final CodeAttribute c = method.getCodeAttribute();
+            c.iload(0);
+            c.iconst(' ');
+            final BranchEnd ok = c.ifIcmpeq();
+            c.iload(0);
+            c.iconst('\t');
+            final BranchEnd ok2 = c.ifIcmpeq();
+            c.iconst(0);
+            c.returnInstruction();
+            c.branchEnd(ok);
+            c.branchEnd(ok2);
+            c.iconst(1);
+            c.returnInstruction();
+        }
+        {
+            // all TEXT
+            final ClassMethod method = classFile.addMethod(AccessFlag.PRIVATE | AccessFlag.STATIC, HM_IS_HEADER_VAL, "Z", "B");
+            final CodeAttribute c = method.getCodeAttribute();
+            c.iload(0);
+            c.iconst(9); // HT
+            final BranchEnd ok = c.ifIcmpeq();
+            c.iload(0);
+            c.iconst(0);
+            final BranchEnd ok2 = c.ifIcmplt(); // 128-255
+            c.iload(0);
+            c.iconst(' ');
+            final BranchEnd bad = c.ifIcmplt();
+            c.iload(0);
+            c.iconst(127);
+            final BranchEnd ok3 = c.ifIcmpne();
+            c.branchEnd(bad);
+            c.iconst(0);
+            c.returnInstruction();
+            c.branchEnd(ok);
+            c.branchEnd(ok2);
+            c.branchEnd(ok3);
+            c.iconst(1);
+            c.returnInstruction();
+        }
+        {
+            final ClassMethod method = classFile.addMethod(AccessFlag.PRIVATE | AccessFlag.STATIC, HM_GENERIC_HEADER_VALUE, "int", "io.undertow.util.HttpString", "javax.nio.ByteBuffer");
+            int var = 0;
+            final CodeAttribute c = method.getCodeAttribute();
+            final int headerNameVar = var ++; // parameter
+            final int bufVar = var ++; // parameter
+            final int limVar = var ++;
+            final int posVar = var ++;
+            final int startVar = var ++;
+            final int byteVar = var ++;
+            c.aload(bufVar);
+            c.invokevirtual(ByteBuffer.class.getName(), "limit", "()I");
+            c.istore(limVar);
+            c.aload(bufVar);
+            c.invokevirtual(ByteBuffer.class.getName(), "position", "()I");
+            c.istore(posVar);
+
+            // state: start
+            final CodeLocation start = c.mark();
+            c.iload(posVar);
+            c.iload(limVar);
+            final BranchEnd uf1 = c.ifIcmpeq();
+            c.aload(bufVar);
+            c.iload(posVar);
+            c.invokevirtual(ByteBuffer.class.getName(), "get", "(I)B");
+            c.istore(byteVar);
+            c.iinc(posVar, 1);
+            c.iload(posVar);
+            c.istore(startVar);
+
+            c.iload(byteVar);
+            c.invokestatic(classFile.getName(), HM_IS_LWS, "(B)Z");
+            c.ifEq(start);
+            c.iload(byteVar);
+            c.iconst(13);
+            final BranchEnd state1be = c.ifIcmpeq();
+            c.iload(byteVar);
+            c.iconst('"');
+            final BranchEnd state7be1 = c.ifIcmpeq();
+            c.iload(byteVar);
+            c.invokestatic(classFile.getName(), HM_IS_HEADER_VAL, "(B)Z");
+            final BranchEnd state3be = c.ifeq();
+            final BranchEnd err1 = c.gotoInstruction();
+
+            // state 1
+            c.branchEnd(state1be);
+            c.iload(posVar);
+            c.iload(limVar);
+            final BranchEnd uf2 = c.ifIcmpeq();
+            c.aload(bufVar);
+            c.iload(posVar);
+            c.invokevirtual(ByteBuffer.class.getName(), "get", "(I)B");
+            c.istore(byteVar);
+            c.iinc(posVar, 1);
+
+            c.iload(byteVar);
+            c.iconst(10);
+            final BranchEnd state2be = c.ifIcmpeq();
+            final BranchEnd err2 = c.gotoInstruction();
+
+            // state 2
+            c.branchEnd(state2be);
+            c.iload(posVar);
+            c.iload(limVar);
+            final BranchEnd uf3 = c.ifIcmpeq();
+            c.aload(bufVar);
+            c.iload(posVar);
+            c.invokevirtual(ByteBuffer.class.getName(), "get", "(I)B");
+            c.istore(byteVar);
+            c.iinc(posVar, 1);
+
+            c.iload(byteVar);
+            c.invokestatic(classFile.getName(), HM_IS_LWS, "(B)Z");
+            c.ifEq(start);
+            c.iload(byteVar);
+            c.invokestatic(classFile.getName(), HM_IS_HEADER, "(B)Z");
+            final BranchEnd err3 = c.ifne();
+
+            // empty header
+            // pos is actually located after the first char of the next header
+            c.iload(bufVar);
+            c.iload(posVar);
+            c.iconst(1);
+            c.isub();
+            c.invokevirtual(ByteBuffer.class.getName(), "position", "(I)Ljava/nio/ByteBuffer;");
+            c.pop();
+
+            c.iconst(CONST_OK);
+            c.returnInstruction();
+
+            // state 3
+            final CodeLocation state3 = c.mark();
+            c.branchEnd(state3be);
+            c.iload(posVar);
+            c.iload(limVar);
+            final BranchEnd uf4 = c.ifIcmpeq();
+            c.aload(bufVar);
+            c.iload(posVar);
+            c.invokevirtual(ByteBuffer.class.getName(), "get", "(I)B");
+            c.istore(byteVar);
+            c.iinc(posVar, 1);
+
+            c.iload(byteVar);
+            c.iconst(13);
+            final BranchEnd state4be = c.ifIcmpeq();
+            c.iload(byteVar);
+            c.invokestatic(classFile.getName(), HM_IS_LWS, "(B)Z");
+            final BranchEnd state6be1 = c.ifeq();
+            c.iload(byteVar);
+            c.iconst('"');
+            final BranchEnd state7be2 = c.ifIcmpeq();
+            c.iload(byteVar);
+            c.invokestatic(classFile.getName(), HM_IS_HEADER_VAL, "(B)Z");
+            c.ifEq(state3);
+            final BranchEnd err4 = c.gotoInstruction();
+
+            // state 4
+            final CodeLocation state4 = c.mark();
+            c.branchEnd(state4be);
+            c.iload(posVar);
+            c.iload(limVar);
+            final BranchEnd uf5 = c.ifIcmpeq();
+            c.aload(bufVar);
+            c.iload(posVar);
+            c.invokevirtual(ByteBuffer.class.getName(), "get", "(I)B");
+            c.istore(byteVar);
+            c.iinc(posVar, 1);
+
+            c.iload(byteVar);
+            final BranchEnd err5 = c.ifIcmpne();
+            // fall thru to...
+
+            // state 5
+            c.iload(posVar);
+            c.iload(limVar);
+            final BranchEnd uf6 = c.ifIcmpeq();
+            c.aload(bufVar);
+            c.iload(posVar);
+            c.invokevirtual(ByteBuffer.class.getName(), "get", "(I)B");
+            c.istore(byteVar);
+            c.iinc(posVar, 1);
+
+            c.iload(byteVar);
+            c.invokestatic(classFile.getName(), HM_IS_LWS, "(B)Z");
+            final BranchEnd state6be2 = c.ifeq();
+            c.iload(byteVar);
+            c.invokestatic(classFile.getName(), HM_IS_HEADER, "(B)Z");
+            final BranchEnd err6 = c.ifne();
+
+            // header value ends at the char before this one!
+            c.iload(bufVar);
+            c.iload(startVar);
+            c.invokevirtual(ByteBuffer.class.getName(), "position", "(I)Ljava/nio/ByteBuffer;");
+            c.pop();
+
+            c.iload(headerNameVar);
+            c.iload(posVar);
+            c.iload(startVar);
+            c.isub(); // length
+            // todo: add hash code for performance
+            c.invokestatic("io.undertow.util.HttpString", "fromBytes", "(Ljava/nio/ByteBuffer;I)Lio/undertow/util/HttpString;");
+            c.invokevirtual(classFile.getSuperclass(), headerMethod, "(Lio/undertow/util/HttpString;Lio/undertow/util/HttpString;)V");
+
+            c.iload(bufVar);
+            c.iload(posVar);
+            c.iconst(1);
+            c.isub();
+            c.invokevirtual(ByteBuffer.class.getName(), "position", "(I)Ljava/nio/ByteBuffer;");
+            c.pop();
+            c.iconst(CONST_OK);
+            c.returnInstruction();
+
+            // state 6
+            c.branchEnd(state6be1);
+            c.branchEnd(state6be2);
+            c.iload(posVar);
+            c.iload(limVar);
+            final BranchEnd uf7 = c.ifIcmpeq();
+            c.aload(bufVar);
+            c.iload(posVar);
+            c.invokevirtual(ByteBuffer.class.getName(), "get", "(I)B");
+            c.istore(byteVar);
+            c.iinc(posVar, 1);
+
+            c.iload(byteVar);
+            c.iconst(13);
+            c.ifIcmpeq(state4);
+            c.iload(byteVar);
+            c.invokestatic(classFile.getName(), HM_IS_HEADER_VAL, "(B)Z");
+            c.ifEq(state3);
+            final BranchEnd err7 = c.gotoInstruction();
+
+            // state 7
+            c.branchEnd(state7be1);
+            c.branchEnd(state7be2);
+            final CodeLocation state7 = c.mark();
+            c.iload(posVar);
+            c.iload(limVar);
+            final BranchEnd uf8 = c.ifIcmpeq();
+            c.aload(bufVar);
+            c.iload(posVar);
+            c.invokevirtual(ByteBuffer.class.getName(), "get", "(I)B");
+            c.istore(byteVar);
+            c.iinc(posVar, 1);
+
+            c.iload(byteVar);
+            c.iconst('"');
+            c.ifIcmpeq(state3);
+            c.iload(byteVar);
+            c.iconst('\\');
+            final BranchEnd state8be = c.ifeq();
+            c.iload(byteVar);
+            c.invokestatic(classFile.getName(), HM_IS_HEADER_VAL, "(B)Z");
+            c.ifEq(state7);
+            final BranchEnd err8 = c.gotoInstruction();
+
+            // state 8
+            c.branchEnd(state8be);
+            c.iload(posVar);
+            c.iload(limVar);
+            final BranchEnd uf9 = c.ifIcmpeq();
+            c.aload(bufVar);
+            c.iload(posVar);
+            c.invokevirtual(ByteBuffer.class.getName(), "get", "(I)B");
+            c.istore(byteVar);
+            c.iinc(posVar, 1);
+            // accept all
+            c.gotoInstruction(state7);
+
+            c.branchEnd(uf1);
+            c.branchEnd(uf2);
+            c.branchEnd(uf3);
+            c.branchEnd(uf4);
+            c.branchEnd(uf5);
+            c.branchEnd(uf6);
+            c.branchEnd(uf7);
+            c.branchEnd(uf8);
+            c.branchEnd(uf9);
+            c.iconst(CONST_UNDERFLOW);
+            c.returnInstruction();
+
+            c.branchEnd(err1);
+            c.branchEnd(err2);
+            c.branchEnd(err3);
+            c.branchEnd(err4);
+            c.branchEnd(err5);
+            c.branchEnd(err6);
+            c.branchEnd(err7);
+            c.branchEnd(err8);
+            c.iconst(CONST_BAD);
+            c.returnInstruction();
+        }
+
+    }
+
+    protected void addHeaderParsingStage(final HttpHeaderConfig[] headers, final CodeAttribute c, final Action readRetryAction, final Action badRequestAction, int bufVar, int limVar, String exchangeClass) {
+        final ProcessingEnvironment env;
+        final RoundEnvironment roundEnv;
+        final TypeElement typeElement;
+        final StateMachine stateMachine = new StateMachine(readRetryAction, true);
+        final CodeMarker headerMarker = new CodeMarker();
+        final CodeMarker genericValue = new CodeMarker();
+        final CodeMarker ignoreValue = new CodeMarker();
+        int singletons = 0;
+        int var = 0;
+        final int singletonVar = var++;
+        final int posVar = var++;
+        final int byteVar = var++;
+        final int hcVar = var++;
+        final int headerNameVar = var++;
+        for (HttpHeaderConfig header : headers) {
+            // header attributes
+            final boolean fastHeader = header.fast();
+            if (fastHeader) {
+                final String headerName = header.name();
+                final boolean singletonHeader = header.singleton();
+                final String headerMethodName = header.method();
+                // value attributes
+                final CaseSensitivity headerCaseSensitive = header.caseSensitive();
+                final boolean valueCsv = header.csv();
+                final HttpHeaderValueConfig[] values = header.values();
+                final HeaderType headerType = header.headerType();
+                final int singletonIdx;
+                if (singletonHeader) {
+                    if (singletons == 64) {
+                        env.getMessager().printMessage(Diagnostic.Kind.ERROR, "Too many singleton headers", typeElement);
+                        singletonIdx = -1;
+                    } else {
+                        singletonIdx = singletons++;
+                    }
+                } else {
+                    singletonIdx = -1;
+                }
+                final Action matchAction;
+                matchAction = new ShortAction() {
+                    public void emitAction(final CodeAttribute c) {
+                        if (singletonIdx > -1) {
+                            c.lload(singletonVar);
+                            c.lconst(1L << singletonIdx);
+                            c.land();
+                            ignoreValue.ifEQFrom(c);
+                            c.lload(singletonVar);
+                            c.lconst(1L << singletonIdx);
+                            c.lor();
+                            c.lstore(singletonVar);
+                        }
+                        // first things first
+                        c.getfield("io.undertow.util.Headers", headerName.toUpperCase(Locale.US).replace('-', '_'), "Lio/undertow/util/HttpString;");
+                        c.astore(headerNameVar);
+
+                        if (headerMethodName != null) {
+                            if (headerType == HeaderType.HTTP_STRING) {
+
+                            }
+
+                            c.invokevirtual(className, headerMethodName, "(Ljava/lang/String;)V");
+                        } else {
+                            genericValue.gotoFrom(c);
+                        }
+
+
+                        // done, get next header
+                        headerMarker.gotoFrom(c);
+                    }
+                };
+                stateMachine.addRule(headerName, matchAction);
+            }
+            // else let it go the slow way 'round for now
+        }
+        // emit
+        headerMarker.mark(c);
+        stateMachine.emit(env, sourceElement, c, bufVar, limVar, posVar);
+        final CodeMarker terminator = new CodeMarker();
+        final CodeMarker headerChar = new CodeMarker();
+        // hash table matching
+        c.iconst(17);
+        c.istore(hcVar);
+        c.aload(bufVar);
+        c.invokevirtual(ByteBuffer.class.getName(), "position", "()I");
+        c.istore(posVar);
+
+        CodeLocation loop = c.mark();
+        c.iload(posVar);
+        c.iload(limVar);
+        readRetryAction.emitIfEQ(c);
+        c.aload(bufVar);
+        c.iload(posVar);
+        c.invokevirtual(ByteBuffer.class.getName(), "get", "(I)B");
+        c.istore(byteVar);
+        c.iinc(posVar, 1);
+        c.iload(byteVar);
+        c.invokestatic(resultClass, "isHeaderChar", "(B)Z");
+        headerChar.ifNEFrom(c);
+        c.iload(byteVar);
+        c.invokestatic(resultClass, "isHeaderTerminatorChar", "(B)Z");
+        terminator.ifNEFrom(c);
+        badRequestAction.emitAction(c);
+        headerChar.mark(c);
+        c.iload(byteVar);
+        // .. b
+        c.iconst(0xff);
+        // .. b 0xff
+        c.iand();
+        // .. b'
+        c.iload(hcVar);
+        // .. b' hc
+        c.dup();
+        // .. b' hc hc
+        c.iconst(4);
+        c.ishl();
+        // .. b' hc hc*16
+        c.iadd();
+        // .. b' hc*17
+        c.iadd();
+        // .. hc'
+        c.istore(hcVar);
+        c.gotoInstruction(loop);
+
+        terminator.mark(c);
+        // got a terminator char
+        // arg 1: buffer
+        c.aload(bufVar);
+        // arg 2: length
+        c.iload(posVar);
+        c.aload(bufVar);
+        c.invokevirtual(ByteBuffer.class.getName(), "position", "()I");
+        c.isub();
+        // arg 3: hash code
+        c.iload(hcVar);
+        c.invokestatic("io.undertow.util.HttpString", "fromBytes", "(Ljava/nio/ByteBuffer;II)Lio/undertow/util/HttpString;");
+        c.astore(headerNameVar);
+
+        // skip LWS
+        genericValue.mark(c);
+        c.iload(posVar);
+        c.iload(limVar);
+        readRetryAction.emitIfEQ(c);
+        c.aload(bufVar);
+        c.iload(posVar);
+        c.invokevirtual(ByteBuffer.class.getName(), "get", "(I)B");
+        c.istore(byteVar);
+        c.iinc(posVar, 1);
+        c.iload(byteVar);
+        c.invokestatic(resultClass, "isLwsChar", "(B)Z");
+        genericValue.ifEQFrom(c);
+        c.iload(byteVar);
+        c.invokestatic(resultClass, "isHeaderChar", "(B)Z");
+
+    }
+
     protected abstract void createStateMachines(final String[] httpVerbs, final String[] httpVersions, final String[] standardHeaders, final String className, final ClassFile file, final ClassMethod sctor, final AtomicInteger fieldCounter);
 
-    protected void createStateMachine(final String[] originalItems, final String className, final ClassFile file, final ClassMethod sctor, final AtomicInteger fieldCounter, final String methodName, final CustomStateMachine stateMachine) {
+
+
+    protected void createStateMachine(final MatchRule[] rules, final String className, final ClassFile file, final ClassMethod sctor, final AtomicInteger fieldCounter, final String methodName, final CustomStateMachine stateMachine) {
 
         //list of all states except the initial
         final List<State> allStates = new ArrayList<State>();
@@ -353,7 +923,7 @@ public abstract class AbstractParserGenerator {
 
         c.branchEnd(overrun); //overrun and not match use the same code path
         c.branchEnd(noMatch); //the current character did not match
-        c.iconst(NO_STATE);
+        c.iconst(INITIAL);
         c.istore(CURRENT_STATE_VAR);
 
         //create the string builder
@@ -562,7 +1132,7 @@ public abstract class AbstractParserGenerator {
         tokenEnds.add(new AtomicReference<BranchEnd>(c.ifIcmpeq()));
 
 
-        c.iconst(NO_STATE);
+        c.iconst(INITIAL);
         c.istore(CURRENT_STATE_VAR);
 
         //create the string builder

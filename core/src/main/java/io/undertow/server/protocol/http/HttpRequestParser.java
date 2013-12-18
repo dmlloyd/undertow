@@ -28,6 +28,8 @@ import java.util.Map;
 
 import io.undertow.UndertowMessages;
 import io.undertow.UndertowOptions;
+import io.undertow.annotationprocessor.HttpHeaderConfig;
+import io.undertow.annotationprocessor.HttpHeaderValueConfig;
 import io.undertow.annotationprocessor.HttpParserConfig;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -37,57 +39,11 @@ import io.undertow.util.Protocols;
 import io.undertow.util.URLUtils;
 import org.xnio.OptionMap;
 
-import static io.undertow.util.Headers.ACCEPT_CHARSET_STRING;
-import static io.undertow.util.Headers.ACCEPT_ENCODING_STRING;
-import static io.undertow.util.Headers.ACCEPT_LANGUAGE_STRING;
-import static io.undertow.util.Headers.ACCEPT_RANGES_STRING;
-import static io.undertow.util.Headers.ACCEPT_STRING;
-import static io.undertow.util.Headers.AUTHORIZATION_STRING;
-import static io.undertow.util.Headers.CACHE_CONTROL_STRING;
-import static io.undertow.util.Headers.CONNECTION_STRING;
-import static io.undertow.util.Headers.CONTENT_LENGTH_STRING;
-import static io.undertow.util.Headers.CONTENT_TYPE_STRING;
-import static io.undertow.util.Headers.COOKIE_STRING;
-import static io.undertow.util.Headers.EXPECT_STRING;
-import static io.undertow.util.Headers.FROM_STRING;
-import static io.undertow.util.Headers.HOST_STRING;
-import static io.undertow.util.Headers.IF_MATCH_STRING;
-import static io.undertow.util.Headers.IF_MODIFIED_SINCE_STRING;
-import static io.undertow.util.Headers.IF_NONE_MATCH_STRING;
-import static io.undertow.util.Headers.IF_RANGE_STRING;
-import static io.undertow.util.Headers.IF_UNMODIFIED_SINCE_STRING;
-import static io.undertow.util.Headers.MAX_FORWARDS_STRING;
-import static io.undertow.util.Headers.ORIGIN_STRING;
-import static io.undertow.util.Headers.PRAGMA_STRING;
-import static io.undertow.util.Headers.PROXY_AUTHORIZATION_STRING;
-import static io.undertow.util.Headers.RANGE_STRING;
-import static io.undertow.util.Headers.REFERER_STRING;
-import static io.undertow.util.Headers.REFRESH_STRING;
-import static io.undertow.util.Headers.SEC_WEB_SOCKET_KEY_STRING;
-import static io.undertow.util.Headers.SEC_WEB_SOCKET_VERSION_STRING;
-import static io.undertow.util.Headers.SERVER_STRING;
-import static io.undertow.util.Headers.SSL_CIPHER_STRING;
-import static io.undertow.util.Headers.SSL_CIPHER_USEKEYSIZE_STRING;
-import static io.undertow.util.Headers.SSL_CLIENT_CERT_STRING;
-import static io.undertow.util.Headers.SSL_SESSION_ID_STRING;
-import static io.undertow.util.Headers.STRICT_TRANSPORT_SECURITY_STRING;
-import static io.undertow.util.Headers.TRAILER_STRING;
-import static io.undertow.util.Headers.TRANSFER_ENCODING_STRING;
-import static io.undertow.util.Headers.UPGRADE_STRING;
-import static io.undertow.util.Headers.USER_AGENT_STRING;
-import static io.undertow.util.Headers.VIA_STRING;
-import static io.undertow.util.Headers.WARNING_STRING;
-import static io.undertow.util.Methods.CONNECT_STRING;
-import static io.undertow.util.Methods.DELETE_STRING;
-import static io.undertow.util.Methods.GET_STRING;
-import static io.undertow.util.Methods.HEAD_STRING;
-import static io.undertow.util.Methods.OPTIONS_STRING;
-import static io.undertow.util.Methods.POST_STRING;
-import static io.undertow.util.Methods.PUT_STRING;
-import static io.undertow.util.Methods.TRACE_STRING;
-import static io.undertow.util.Protocols.HTTP_0_9_STRING;
-import static io.undertow.util.Protocols.HTTP_1_0_STRING;
-import static io.undertow.util.Protocols.HTTP_1_1_STRING;
+import static io.undertow.annotationprocessor.CaseSensitivity.*;
+
+import static io.undertow.util.Headers.*;
+import static io.undertow.util.Methods.*;
+import static io.undertow.util.Protocols.*;
 
 /**
  * The basic HTTP parser. The actual parser is a sub class of this class that is generated as part of
@@ -99,7 +55,9 @@ import static io.undertow.util.Protocols.HTTP_1_1_STRING;
  *
  * @author Stuart Douglas
  */
-@HttpParserConfig(methods = {
+@HttpParserConfig(
+    defaultHeaderMethod = "handleHeader",
+    fastMethods = {
         OPTIONS_STRING,
         GET_STRING,
         HEAD_STRING,
@@ -107,52 +65,91 @@ import static io.undertow.util.Protocols.HTTP_1_1_STRING;
         PUT_STRING,
         DELETE_STRING,
         TRACE_STRING,
-        CONNECT_STRING},
-        protocols = {
-                HTTP_0_9_STRING, HTTP_1_0_STRING, HTTP_1_1_STRING
-        },
-        headers = {
-                ACCEPT_STRING,
-                ACCEPT_CHARSET_STRING,
-                ACCEPT_ENCODING_STRING,
-                ACCEPT_LANGUAGE_STRING,
-                ACCEPT_RANGES_STRING,
-                AUTHORIZATION_STRING,
-                CACHE_CONTROL_STRING,
-                COOKIE_STRING,
-                CONNECTION_STRING,
-                CONTENT_LENGTH_STRING,
-                CONTENT_TYPE_STRING,
-                EXPECT_STRING,
-                FROM_STRING,
-                HOST_STRING,
-                IF_MATCH_STRING,
-                IF_MODIFIED_SINCE_STRING,
-                IF_NONE_MATCH_STRING,
-                IF_RANGE_STRING,
-                IF_UNMODIFIED_SINCE_STRING,
-                MAX_FORWARDS_STRING,
-                ORIGIN_STRING,
-                PRAGMA_STRING,
-                PROXY_AUTHORIZATION_STRING,
-                RANGE_STRING,
-                REFERER_STRING,
-                REFRESH_STRING,
-                SEC_WEB_SOCKET_KEY_STRING,
-                SEC_WEB_SOCKET_VERSION_STRING,
-                SERVER_STRING,
-                SSL_CLIENT_CERT_STRING,
-                SSL_CIPHER_STRING,
-                SSL_SESSION_ID_STRING,
-                SSL_CIPHER_USEKEYSIZE_STRING,
-                STRICT_TRANSPORT_SECURITY_STRING,
-                TRAILER_STRING,
-                TRANSFER_ENCODING_STRING,
-                UPGRADE_STRING,
-                USER_AGENT_STRING,
-                VIA_STRING,
-                WARNING_STRING
-        })
+        CONNECT_STRING
+    },
+    fastProtocols = {
+        HTTP_0_9_STRING,
+        HTTP_1_0_STRING,
+        HTTP_1_1_STRING
+    },
+    headers = {
+        @HttpHeaderConfig(name = ACCEPT_STRING, csv = true, fast = true),
+        @HttpHeaderConfig(name = ACCEPT_CHARSET_STRING, csv = true),
+        @HttpHeaderConfig(name = ACCEPT_ENCODING_STRING, csv = true, fast = true, caseSensitive = CASE_INSENSITIVE, values = {
+            @HttpHeaderValueConfig(name = COMPRESS_STRING),
+            @HttpHeaderValueConfig(name = X_COMPRESS_STRING),
+            @HttpHeaderValueConfig(name = DEFLATE_STRING),
+            @HttpHeaderValueConfig(name = GZIP_STRING),
+            @HttpHeaderValueConfig(name = X_GZIP_STRING),
+            @HttpHeaderValueConfig(name = IDENTITY_STRING),
+            @HttpHeaderValueConfig(name = SDCH_STRING)
+        }),
+        @HttpHeaderConfig(name = ACCEPT_LANGUAGE_STRING, csv = true, fast = true, caseSensitive = CASE_INSENSITIVE),
+        @HttpHeaderConfig(name = ACCEPT_RANGES_STRING, csv = true),
+        @HttpHeaderConfig(name = AUTHORIZATION_STRING),
+        @HttpHeaderConfig(name = CACHE_CONTROL_STRING, csv = true, fast = true),
+        @HttpHeaderConfig(name = COOKIE_STRING, fast = true, method = "handleCookie"),
+        @HttpHeaderConfig(name = CONNECTION_STRING, csv = true, fast = true, caseSensitive = CASE_INSENSITIVE, values = {
+            @HttpHeaderValueConfig(name = CLOSE_STRING),
+            @HttpHeaderValueConfig(name = KEEP_ALIVE_STRING)
+        }),
+        @HttpHeaderConfig(name = CONTENT_ENCODING_STRING, csv = true, caseSensitive = CASE_INSENSITIVE, values = {
+            // this value is not really allowed, but by putting it here we can combine parser actions and optimize better
+            @HttpHeaderValueConfig(name = CHUNKED_STRING),
+            @HttpHeaderValueConfig(name = COMPRESS_STRING),
+            @HttpHeaderValueConfig(name = X_COMPRESS_STRING),
+            @HttpHeaderValueConfig(name = DEFLATE_STRING),
+            @HttpHeaderValueConfig(name = GZIP_STRING),
+            @HttpHeaderValueConfig(name = X_GZIP_STRING),
+            @HttpHeaderValueConfig(name = IDENTITY_STRING),
+            @HttpHeaderValueConfig(name = SDCH_STRING)
+        }),
+        @HttpHeaderConfig(name = CONTENT_LENGTH_STRING, method = "handleContentLength", singleton = true),
+        @HttpHeaderConfig(name = CONTENT_TYPE_STRING, singleton = true),
+        @HttpHeaderConfig(name = EXPECT_STRING, csv = true, caseSensitive = CASE_INSENSITIVE_EXCEPT_QUOTED),
+        @HttpHeaderConfig(name = FROM_STRING),
+        @HttpHeaderConfig(name = HOST_STRING, fast = true, method = "handleHost", singleton = true, caseSensitive = CASE_INSENSITIVE, values = {
+            @HttpHeaderValueConfig(name = LOCALHOST_STRING)
+        }),
+        @HttpHeaderConfig(name = IF_MATCH_STRING, csv = true),
+        @HttpHeaderConfig(name = IF_MODIFIED_SINCE_STRING, fast = true),
+        @HttpHeaderConfig(name = IF_NONE_MATCH_STRING, csv = true, fast = true),
+        @HttpHeaderConfig(name = IF_RANGE_STRING),
+        @HttpHeaderConfig(name = IF_UNMODIFIED_SINCE_STRING),
+        @HttpHeaderConfig(name = MAX_FORWARDS_STRING),
+        @HttpHeaderConfig(name = ORIGIN_STRING),
+        @HttpHeaderConfig(name = PRAGMA_STRING, csv = true, fast = true, caseSensitive = CASE_INSENSITIVE_EXCEPT_QUOTED, values = {
+            @HttpHeaderValueConfig(name = NO_CACHE_STRING)
+        }),
+        @HttpHeaderConfig(name = PROXY_AUTHORIZATION_STRING),
+        @HttpHeaderConfig(name = RANGE_STRING),
+        @HttpHeaderConfig(name = REFERER_STRING, fast = true),
+        @HttpHeaderConfig(name = REFRESH_STRING),
+        @HttpHeaderConfig(name = SEC_WEB_SOCKET_KEY_STRING),
+        @HttpHeaderConfig(name = SEC_WEB_SOCKET_VERSION_STRING),
+        @HttpHeaderConfig(name = SERVER_STRING),
+        @HttpHeaderConfig(name = SSL_CLIENT_CERT_STRING),
+        @HttpHeaderConfig(name = SSL_CIPHER_STRING),
+        @HttpHeaderConfig(name = SSL_SESSION_ID_STRING),
+        @HttpHeaderConfig(name = SSL_CIPHER_USEKEYSIZE_STRING),
+        @HttpHeaderConfig(name = STRICT_TRANSPORT_SECURITY_STRING),
+        @HttpHeaderConfig(name = TE_STRING, csv = true),
+        @HttpHeaderConfig(name = TRAILER_STRING, csv = true, caseSensitive = CASE_INSENSITIVE),
+        @HttpHeaderConfig(name = TRANSFER_ENCODING_STRING, csv = true, fast = true, method = "handleTransferEncoding", caseSensitive = CASE_INSENSITIVE, values = {
+            @HttpHeaderValueConfig(name = CHUNKED_STRING),
+            @HttpHeaderValueConfig(name = COMPRESS_STRING),
+            @HttpHeaderValueConfig(name = X_COMPRESS_STRING),
+            @HttpHeaderValueConfig(name = DEFLATE_STRING),
+            @HttpHeaderValueConfig(name = GZIP_STRING),
+            @HttpHeaderValueConfig(name = X_GZIP_STRING),
+            @HttpHeaderValueConfig(name = IDENTITY_STRING),
+            @HttpHeaderValueConfig(name = SDCH_STRING)
+        }),
+        @HttpHeaderConfig(name = UPGRADE_STRING, csv = true),
+        @HttpHeaderConfig(name = USER_AGENT_STRING, fast = true),
+        @HttpHeaderConfig(name = VIA_STRING, csv = true),
+        @HttpHeaderConfig(name = WARNING_STRING, csv = true)
+    })
 public abstract class HttpRequestParser {
 
     private static final byte[] HTTP;
@@ -210,43 +207,8 @@ public abstract class HttpRequestParser {
                 handleHttpVerb(buffer, currentState, builder);
             }
             handlePath(buffer, currentState, builder);
-            boolean failed = false;
-            if (buffer.remaining() > HTTP_LENGTH + 3) {
-                int pos = buffer.position();
-                for (int i = 0; i < HTTP_LENGTH; ++i) {
-                    if (HTTP[i] != buffer.get(pos + i)) {
-                        failed = true;
-                        break;
-                    }
-                }
-                if (!failed) {
-                    final byte b = buffer.get(pos + HTTP_LENGTH);
-                    final byte b2 = buffer.get(pos + HTTP_LENGTH + 1);
-                    final byte b3 = buffer.get(pos + HTTP_LENGTH + 2);
-                    if(b2 == '\r' && b3 == '\n') {
-                        if(b == '1') {
-                            builder.setProtocol(Protocols.HTTP_1_1);
-                            buffer.position(pos + HTTP_LENGTH + 3);
-                            currentState.state = ParseState.HEADER;
-                        } else if (b == '0') {
-                            builder.setProtocol(Protocols.HTTP_1_0);
-                            buffer.position(pos + HTTP_LENGTH + 3);
-                            currentState.state = ParseState.HEADER;
-                        } else {
-                            failed = true;
-                        }
-                    } else {
-                        failed = true;
-                    }
-                }
-            } else {
-                failed = true;
-            }
-            if(failed) {
-                handleHttpVersion(buffer, currentState, builder);
-                handleAfterVersion(buffer, currentState);
-            }
-
+            handleHttpVersion(buffer, currentState, builder);
+            handleAfterVersion(buffer, currentState);
             while (currentState.state != ParseState.PARSE_COMPLETE && buffer.hasRemaining()) {
                 handleHeader(buffer, currentState, builder);
                 if (currentState.state == ParseState.HEADER_VALUE) {
@@ -308,6 +270,174 @@ public abstract class HttpRequestParser {
         }
     }
 
+    protected final int handleHost(ByteBuffer buffer, final HttpServerExchange exchange) {
+        if (exchange.getRequestHostName() != null) {
+            // already got a host... ignore content
+            return 3;
+        }
+        final int lim = buffer.limit();
+        int pos = buffer.position();
+        byte b;
+        for (;;) {
+            if (pos == lim) {
+                return 1;
+            }
+            b = buffer.get(pos++);
+            if (b == '\r') {
+                // expect LF
+                if (pos == lim) {
+                    // incomplete; retry
+                    return 1;
+                }
+                b = buffer.get(pos++);
+                if (b != '\n') {
+                    // malformed request
+                    return 2;
+                }
+                if (pos == lim) {
+                    // incomplete; retry
+                    return 1;
+                }
+                b = buffer.get(pos++);
+                if (b != ' ' && b != '\t') {
+                    // expected whitespace
+                    return 2;
+                }
+                continue;
+            } else if (b == ' ' || b == '\t') {
+                continue;
+            } else {
+                break;
+            }
+        }
+        // got a real char, start the real loop
+        int start = pos - 1;
+        if (pos == lim) {
+            return 1;
+        }
+        b = buffer.get(pos++);
+        if (b == '[') {
+            // IPv6 style; read until ], then an optional port #
+            for (;;) {
+                if (pos == lim) {
+                    return 1;
+                }
+                b = buffer.get(pos++);
+                if (b == ']') {
+                    buffer.position(start);
+                    // todo: caching of common host names?
+                    exchange.setRequestHostName(new HttpString(buffer, pos - start));
+                    // parse port #
+                    break;
+                } else if (b != ':' && (b < '0' || b > '9') && (b < 'a' || b > 'f') && (b < 'A' || b > 'F')) {
+                    return 2;
+                }
+                // OK
+            }
+            // expect : for port # or end of field
+            if (pos == lim) {
+                return 1;
+            }
+            b = buffer.get(pos++);
+            if (b == '\r') {
+                // expect \n and end with default port # (0)
+                // expect LF
+                if (pos == lim) {
+                    // incomplete; retry
+                    return 1;
+                }
+                b = buffer.get(pos++);
+                if (b != '\n') {
+                    // malformed request
+                    return 2;
+                }
+                if (pos == lim) {
+                    // incomplete; retry
+                    return 1;
+                }
+                b = buffer.get(pos);
+                if (b == ' ' || b == '\t') {
+                    // expected end of field
+                    return 2;
+                }
+                buffer.position(pos);
+                return 0;
+            }
+            if (b != ':') {
+                return 2;
+            }
+            // fall out to parse port #
+        } else {
+            // IPv4 or a host name, then an optional port #
+            for (;;) {
+                if (pos == lim) {
+                    return 1;
+                }
+                b = buffer.get(pos++);
+                if (b != '.' && (b < 'a' || b > 'z') && b != '-' && (b < '0' || b > '9') && (b < 'A' || b > 'Z')) {
+                    return 2;
+                } else if (b == ':') {
+                    buffer.position(start);
+                    // todo: caching of common host names?
+                    exchange.setRequestHostName(new HttpString(buffer, pos - start));
+                    // parse port #
+                    break;
+                } else if (b == '\r') {
+                    // expect end of header
+                    buffer.position(start);
+                    // todo: caching of common host names?
+                    exchange.setRequestHostName(new HttpString(buffer, pos - start));
+                    if (pos == lim) {
+                        // incomplete; retry
+                        return 1;
+                    }
+                    b = buffer.get(pos++);
+                    if (b != '\n') {
+                        // malformed request
+                        return 2;
+                    }
+                    if (pos == lim) {
+                        // incomplete; retry
+                        return 1;
+                    }
+                    b = buffer.get(pos);
+                    if (b == ' ' && b == '\t') {
+                        // expected end of field
+                        return 2;
+                    }
+                    buffer.position(pos);
+                    return 0;
+                }
+                // OK
+            }
+        }
+        if (b == '\r') {
+            // could be end, could be (invalid!) LWS
+            // expect LF
+            if (pos == lim) {
+                // incomplete; retry
+                return 1;
+            }
+            b = buffer.get(pos++);
+            if (b != '\n') {
+                // malformed request
+                return 2;
+            }
+            if (pos == lim) {
+                // incomplete; retry
+                return 1;
+            }
+            b = buffer.get(pos);
+            if (b == ' ' || b == '\t') {
+                // *un*expected LWS
+                return 2;
+            }
+
+            buffer.position(pos);
+            // handled!
+            return 0;
+        }
+    }
 
     abstract void handleHttpVerb(ByteBuffer buffer, final ParseState currentState, final HttpServerExchange builder);
 
@@ -460,7 +590,7 @@ public abstract class HttpRequestParser {
         //also deals with URL decoding the query parameters as well, while also
         //maintaining a non-decoded version to use as the query string
         //In most cases these string will be the same, and as we do not want to
-        //build up two seperate strings we don't use encodedStringBuilder unless
+        //build up two separate strings we don't use encodedStringBuilder unless
         //we encounter an encoded character
 
         while (buffer.hasRemaining()) {
@@ -538,7 +668,7 @@ public abstract class HttpRequestParser {
         //also deals with URL decoding the query parameters as well, while also
         //maintaining a non-decoded version to use as the query string
         //In most cases these string will be the same, and as we do not want to
-        //build up two seperate strings we don't use encodedStringBuilder unless
+        //build up two separate strings we don't use encodedStringBuilder unless
         //we encounter an encoded character
 
         while (buffer.hasRemaining()) {
@@ -752,13 +882,13 @@ public abstract class HttpRequestParser {
      */
     protected static Map<String, HttpString> httpStrings() {
         final Map<String, HttpString> results = new HashMap<String, HttpString>();
-        final Class[] classs = {Headers.class, Methods.class, Protocols.class};
+        final Class[] classes = {Headers.class, Methods.class, Protocols.class};
 
-        for (Class<?> c : classs) {
+        for (Class<?> c : classes) {
             for (Field field : c.getDeclaredFields()) {
                 if (field.getType().equals(HttpString.class)) {
                     field.setAccessible(true);
-                    HttpString result = null;
+                    HttpString result;
                     try {
                         result = (HttpString) field.get(null);
                         results.put(result.toString(), result);

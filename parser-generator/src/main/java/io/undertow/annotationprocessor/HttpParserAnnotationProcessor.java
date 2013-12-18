@@ -60,7 +60,7 @@ public class HttpParserAnnotationProcessor extends AbstractProcessor {
                 continue;
             }
 
-            final byte[] newClass = requestGenerator.createTokenizer(((TypeElement) element).getQualifiedName().toString(), parser.methods(), parser.protocols(), parser.headers());
+            final byte[] newClass = requestGenerator.createTokenizer(((TypeElement) element).getQualifiedName().toString(), parser.fastMethods(), parser.fastProtocols(), parser.headers());
             try {
                 JavaFileObject file = filer.createClassFile(((TypeElement) element).getQualifiedName() + AbstractParserGenerator.CLASS_NAME_SUFFIX, element);
                 final OutputStream out = file.openOutputStream();
