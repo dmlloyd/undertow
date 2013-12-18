@@ -68,9 +68,9 @@ public class GSSAPIAuthenticationMechanism implements AuthenticationMechanism {
 
         @Override
         public boolean isExclusivityRequired(HttpServerExchange exchange) {
-            List<String> authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
+            HeaderValues authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
             if (authHeaders != null) {
-                for (String current : authHeaders) {
+                for (HttpString current : authHeaders) {
                     if (current.startsWith(NEGOTIATE_PREFIX)) {
                         return true;
                     }

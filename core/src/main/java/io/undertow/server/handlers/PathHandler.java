@@ -22,7 +22,6 @@ import io.undertow.Handlers;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.PathMatcher;
-import io.undertow.util.HttpString;
 
 /**
  * Handler that dispatches to a given handler based of a prefix match of the path.
@@ -52,7 +51,7 @@ public class PathHandler implements HttpHandler {
             ResponseCodeHandler.HANDLE_404.handleRequest(exchange);
             return;
         }
-        exchange.setRelativePath(HttpString.fromString(match.getRemaining()));
+        exchange.setRelativePath(match.getRemaining());
         exchange.setResolvedPath(exchange.getRequestPath().substring(0, exchange.getRequestPath().length() - match.getRemaining().length()));
         match.getValue().handleRequest(exchange);
     }

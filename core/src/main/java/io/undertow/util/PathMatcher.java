@@ -62,11 +62,11 @@ public class PathMatcher<T> {
      * @return The match match. This will never be null, however if none matched its value field will be
      */
     public PathMatch<T> match(HttpServerExchange exchange){
-        final String path = exchange.getRelativePath();
+        final HttpString path = exchange.getRelativePath();
         if (!exactPathMatches.isEmpty()) {
             T match = exactPathMatches.get(path);
             if (match != null) {
-                return new PathMatch<T>("", match);
+                return new PathMatch<T>(HttpString.EMPTY, match);
             }
         }
 
@@ -82,7 +82,7 @@ public class PathMatcher<T> {
             } else if (pathLength < length) {
                 char c = path.charAt(pathLength);
                 if (c == '/') {
-                    String part = path.substring(0, pathLength);
+                    HttpString part = path.substring(0, pathLength);
                     T next = paths.get(part);
                     if (next != null) {
                         return new PathMatch<T>(path.substring(pathLength), next);
@@ -203,15 +203,15 @@ public class PathMatcher<T> {
     }
 
     public static final class PathMatch<T> {
-        private final String remaining;
+        private final HttpString remaining;
         private final T value;
 
-        public PathMatch(String remaining, T value) {
+        public PathMatch(HttpString remaining, T value) {
             this.remaining = remaining;
             this.value = value;
         }
 
-        public String getRemaining() {
+        public HttpString getRemaining() {
             return remaining;
         }
 
